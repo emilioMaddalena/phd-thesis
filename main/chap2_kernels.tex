@@ -1,0 +1,40 @@
+\cleardoublepage
+\chapter{Safely learning with kernels}
+\markboth{Learning with kernels}{Learning with kernels}
+
+In this chapter, we discuss the problem of learning and elucidate what viewpoint will be taken to tackle it. Next, novel results are presented concerning uncertainty estimation in a kernelized setting. Finally, some examples are given to illustrate the general use of the theory.
+
+\section{The problem of learning}
+
+At its core, learning refers to the process of \textit{gathering information} and using it to \textit{improve one's knowledge} about the subject or phenomenon under study. The standing assumption here is then clearly that a link is in place, tying information and phenomenon together, even if such link is partially corrupted.
+
+Information comes in many science fields in the form of data, samples, sometimes referred to as examples. In modern machine learning, people study a number of rather abstract subjects ranging from the traits that distinguish images of muffins and chihuahuas, to the link between passengers' features and their survival likelihood in case of a ship sinking event.  The mathematical formalism often used to study the link between examples and these phenomena is statistics. This choice is convenient because it can describe the possible non-determinism of outcomes through the concepts of distributions and samples; and because it provides us with plenty of tools to carry out learning, i.e., improve our knowledge about the phenomenon through the samples at hand. In this chapter, we will however adopt a different standpoint to study and tackle the problem of learning, which is, as we will later argue, more aligned with the ways control engineers are taught to see physical systems. This standpoint is the one offered by approximation theory.
+
+\comment{Statistical learning and approximation theory are not in opposition. Indeed, we can define the function of interest as the conditional \cite{temlyakov2008approximation}, perhaps talk about Belkin's work linking the two and advocating for using the approximation lenses.}
+
+\begin{definition}
+	\textbf{(Kernel)} Given an arbitrary non-empty set $\Omega$, a kernel $k$ is any symmetric function of the form
+	\begin{equation}
+		k: \Omega \times \Omega \rightarrow \mathbb{R}
+	\end{equation}
+\end{definition}
+
+\comment{Talk about kernels (can be seen as a library of non-linearities) and show examples of kernels. Say however, we'll restrict our attention to a specific class of them.}
+
+\begin{definition}
+	\textbf{(Kernel matrix)} Given finite set of inputs $X = \{x_1,\dots,x_N\} \subset \Omega$, the $N \times N$ matrix $K_{XX}$ with entries $[K_{XX}]_{ij} = k(x_i,x_j)$ is called the kernel matrix of $k$ associated with the points $X$.
+\end{definition}
+
+
+\begin{definition}
+	\textbf{(Mercer kernel)} A kernel function $k$ is called a Mercer kernel if for any finite subset of points $X \subset \Omega$, its kernel matrix is positive definite $K_{XX} \succ 0$.
+\end{definition}
+
+
+\section{The problem of uncertainty quantification}
+
+\begin{theorem}
+	This is some truth
+\end{theorem}
+
+Bla bla
