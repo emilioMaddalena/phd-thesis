@@ -1,0 +1,320 @@
+\cleardoublepage
+\chapter{Learning MPC controllers with pQP neural networks}
+\markboth{Learning MPC controllers with pQP neural networks}{Learning MPC controllers with pQP neural networks}
+
+In this chapter, we ...
+
+\section{pQP neural networks}
+
+\section{Learning linear MPC controllers with pQP neural networks}
+
+Consider the following standard MPC formulation for linear dynamical systems
+\begin{subequations}
+	\label{eq:mpcFormulation}
+	\begin{align}
+		%\mathds{P}1: \min_{X,U} \quad & q(x_H) + \sum_{k=1}^{H-1} l(x_k,u_k) \\
+		\mathds{P}1: \min_{X,U} \quad & \sum_{k=0}^{H-1} \big( x_k' Q x_k + u_k' R u_k \big) + x_H' P x_H\\
+		\text{s.t.} \quad & \forall k = 0,\dots,H-1 \\
+		& x_{k+1} = A x_{k} + B u_{k} \\
+		& x_{k} \in \mathbb{X} \\
+		& u_{k} \in \mathbb{U} \\
+		& x_{H} \in \mathbb{X}_H \\
+		& x_0 = x(0)
+	\end{align}
+\end{subequations}
+where $X:=\{x_1,\dots,x_{H}\}$, $U:=\{u_0,\dots,u_{H-1}\}$, $Q \succeq 0$, $P \succeq 0$, $R \succ 0$, and the constraints are all described by affine equalities and inequalities. Denote by $\pi: \mathcal{X} \rightarrow \mathcal{U}$ the optimal solution of \eqref{eq:mpcFormulation} in its parametric form with respect to the initial conditions $x(0)$, where $\mathcal{X} \subseteq \mathbb{R}^n$ is the feasible state space of $\mathds{P}1$ and $\mathcal{U} \subseteq \mathbb{R}^m$ is the control space. We assume a set of $N$ samples can be acquired from the original control law\footnote{The dataset can also be directly obtained from the implicit controller; depending on the size of the problem at hand, computing the explicit solution might be intractable.}
+\begin{subequations}
+	\begin{align}
+		& D = \{\text{x}_i,\text{u}_i\}_{i=1}^{N} \\[3pt]
+		& \text{u}_i = \pi(\text{x}_i), \; i=1,\dots,N
+	\end{align}
+\end{subequations}
+The process of acquiring the training dataset does not have to follow a particular distribution, nor do the samples have to be independent.
+
+\subsection{The proposed architecture}
+
+The key idea behind the proposed approximator is the use of a parametric quadratic program layer as part of the Neural Network, and optimizing over its parameters in order to fit the available dataset. This layer is implicitly described by the quadratic program
+\begin{equation}
+	\label{eq:pQP}
+	z^\star = \text{arg }\min_{z \geq 0} \; ||Lz + y_1(x)||^{2} + \epsilon ||z||^2
+\end{equation}
+which is \textit{always feasible} and \textit{bounded from below}. The size of this mathematical program, i.e. the dimension of $z$, can be tuned to attain approximations with different complexity. Moreover, as notation suggests, the parameter $y_1$ depends on a previous affine layer that maps the system states into the $z$ space, $y_1 := Fx + f$. Let $y_2 := z^{\star}$, then another affine layer maps the optimal solution to the input space $y_3 := Gy_2 + g$, and a projection onto the feasible input set produces the final control action $\hat{u} := \text{Proj}_{\, \mathbb{U}}(y_2)$. This last step is necessary to guarantee feasibility of the control moves (see e.g. \cite{chen2018approximating}). An illustration of the proposed architecture is presented in Fig.~\ref{fig:nnArchitecture}, where the projection layer was particularized to a familiar element-wise saturation operation $\text{sat}(\cdot)$, valid for box input constraints.
+
+%\begin{figure}[t]
+%	\begin{center}
+%		\includegraphics[width=7cm]{IFAC-NN}    % The printed column width is 8.4 cm.
+%		\caption{An illustration of the NN eMPC controller approximator. The parameters to be optimized are shown on the left-hand side.}
+%		\label{fig:nnArchitecture}
+%	\end{center}
+%\end{figure}
+
+Let the chosen number of decision variables in the pQP be $z \in \mathbb{R}^{n_z}$. We choose $L \in \mathbb{R}^{n_z \times n_z}$ to be square, and therefore $F \in \mathbb{R}^{n_z \times n}$, $f \in \mathbb{R}^{n_z}$. Moreover, $G \in \mathbb{R}^{m \times n_z}$ and $g \in \mathbb{R}^{m}$. If $n_z \ge n$, the first layer lifts the input data into a higher dimensional space before it is passed through the optimization layer. A last affine function then projects it onto the control space. These facts will be later employed to analyze the representative power of the network.
+
+The parameters to be trained are therefore $F$, $f$, $L$, $G$ and $g$. This process can be carried out via a stochastic gradient descent algorithm applied to an appropriate loss function. Differentiability of all layers is trivial with the exception of the pQP one \citep{gould2016differentiating,amos2017optnet}. Regarding the latter, note that the objective in \eqref{eq:pQP} can be rewritten as
+\begin{equation}
+	\label{eq:idk}
+	V(z) := z'(\epsilon I + L'L)z + (2L'y_1(x))' \, z + y_1(x)'y_1(x)
+\end{equation}
+whose Lagrangian is simply
+\begin{equation}
+	\mathcal{L}(z,\lambda) = V(z) - \lambda'z
+\end{equation}
+The Karush-Kuhn-Tucker (KKT) conditions for primal and dual feasibility, complementary slackness, and stationarity then read 
+\begin{subequations}
+	\label{eq:kkt}
+	\begin{align}
+		& z^\star \geq 0 \\
+		& \lambda^\star \geq 0 \\
+		& \lambda_i^\star z_i^\star = 0, \ \forall i = 1,\dots,n_z \\
+		& 2(\epsilon I + L'L)z^\star + (2L'y_1(x)) - \lambda^\star = 0
+	\end{align}
+\end{subequations}
+where $\lambda_i$ and $z_i$ denote the components of the Lagrange multipliers and decision variables vectors. The following proposition presents the differentiability properties of the pQP layer, and holds since \eqref{eq:pQP} is a particular instance of the \texttt{OptNet} layer \citep{amos2017optnet} with strictly convex objective function.
+
+\begin{proposition}
+	Let $\theta := (L,y_1)$. The parametric solution $z^\star(\theta)$ of \eqref{eq:pQP} is subdifferentiable everywhere in its domain, i.e., $\partial z^\star(\theta) \neq \{ \, \}$, and $\partial z^\star(\theta)$ has a unique element (the jacobian) everywhere but in a set of measure zero.
+\end{proposition}
+
+As shown in \cite{amos2017optnet}, the relevant gradients with respect to the parameters to be trained can be obtained from the KKT set of equations \eqref{eq:kkt}. Hence, backward passes are possible and backpropagation can be performed to optimize all of the NN parameters.
+
+\subsection{Properties of the approximator}
+
+%Depending on the number of parameters $n_z$, and thus on the size of the NN, the proposed architecture can not only approximate arbitrarely well, but generate exactly any continuous piecewise affine function. The formal statement is presented next.
+The authors of \cite{hempel2013every} showed that any continuous PWA function can be obtained as the solution of a particular parametric linear program (pLP) transformed by a linear map. Even though this view could be adopted herein, we instead prove a different result that is enough in the context of linear eMPC.
+
+\begin{theorem}
+	(The proposed NN architecture can learn any linear quadratic MPC controller) Let $\hat{\pi}: \mathcal{X} \rightarrow \mathcal{U}$ be the map defined by the composition of all four layers, i.e., $\hat{\pi}(x) := y_4 \circ y_3 \circ y_2 \circ y_1(x)$. Set $\epsilon = 0$, then $\exists F$, $f$, $L$, $G$ and $g$ with appropriate dimensions such that $\forall x \in \mathcal{X}, \ \hat{\pi}(x) = \pi(x)$.
+\end{theorem}
+
+\textit{Proof}: Start by condensing the MPC problem $\mathds{P}1$, i.e., using the equality constraints to eliminate all state decision variables except for the initial state $x(0)$. This leads to the following parametric problem
+\begin{subequations}
+	\begin{align}
+		%\mathds{P}1: \min_{X,U} \quad & q(x_H) + \sum_{k=1}^{H-1} l(x_k,u_k) \\
+		\mathds{P}2: \min_{U} \quad & U' \, \Lambda \, U + x(0)' \, \Gamma \, U\\
+		\text{s.t.} \quad & \Phi \, U \leq  \Omega \, x(0) + \omega \label{eq:constr}
+	\end{align}
+\end{subequations}
+The step by step procedure can be found in \cite{wright2019efficient}. We have that $\Lambda \succ 0$. Problems $\mathds{P}2$ and $\mathds{P}1$ are then equivalent in the sense that the solution $U^\star$ of $\mathds{P}2$ and $\{X^\star,U^\star\}$ of $\mathds{P}1$ share the same $U^\star$ component. Next, calculate the dual problem of $\mathds{P}2$, which is
+\begin{equation}
+		\label{eq:dualMPC}
+		\mathds{D}2: \min_{\lambda \geq 0} \ \frac{1}{4} \, \big[ \lambda'\Phi \, \Lambda^{-1}\Phi'\lambda + \, (4 x(0)'\Omega' +2 x(0)'\Gamma \Lambda^{-1} \, \Phi' + 4 \omega')\lambda + \, x(0)'\Gamma \Lambda^{-1} \Gamma'x(0) \big]
+\end{equation}
+It is possible to recover the primal optimal solution $U^\star$ from the dual optimal solution $\lambda^\star$ through the stationarity optimality condition of $\mathds{P}2$
+\begin{equation}
+	\label{eq:stationarity}
+	U^\star = -0.5 \, \Lambda^{-1}\Phi' \lambda^{\star} -0.5 \, \Lambda^{-1} \Gamma'x(0)
+\end{equation}
+
+%Next, it would be possible to enforce the first two layers to match the dual problem $\mathds{D}2$, and the third to implement \eqref{eq:stationarity} and recover the primal solution. Nevertheless, this would require the third layer to have a so called skip connection directly from the NN input, i.e., access to $x(0)$. We instead define slightly different linear and pQP layers that not only learn $\mathds{D}2$, but also let $x(0)$ pass through them and arrive at the second linear layer.
+The above equation is learned by the second linear layer in Figure~\ref{fig:nnArchitecture}. Nevertheless, from \eqref{eq:stationarity} we see that it requires the value of $x(0)$, which is the NN input. It is shown next that with a pQP layer of appropriate size and parameters, it is possible not only to learn \eqref{eq:dualMPC}, but also let the value of $x(0)$ `pass through' the NN and arrive to the second linear layer as needed to retrieve the primal optimal solution.
+
+Let the auxiliary variable $\tilde{L}$ and function $\tilde{y}_1(x) := \tilde{F}x + \tilde{f}$ be the solution to (compare \eqref{eq:idk} and \eqref{eq:dualMPC})
+\begin{subequations}
+	\label{eq:Landg1}
+	\begin{align}
+		\tilde{L}'\tilde{L} + \epsilon I & = 0.25 \, \Phi \Lambda^{-1} \Phi' \\
+		2 \tilde{L}'\tilde{y}_1(x) & = \Omega \, x(0) + 0.5 \, \Phi \Lambda^{-1}x(0) + \omega %\\
+		%y_1(x)'y_1(x) & = 0.25 \, \overline{r}'\overline{R}^{-1}\overline{r}
+	\end{align}
+\end{subequations}
+which leads to $\epsilon = 0$, $\tilde{L} = 0.5 \, (\Phi \tilde{\Lambda})'$, where $\tilde{\Lambda}$ is the unique square root of $\Lambda^{-1}$, guaranteed to exist as $\Lambda^{-1} \succ 0$. Then, $\tilde{y}_1(x) = (\Phi \tilde{\Lambda})^{-1} (\Omega \, x(0) + 0.5 \, \Phi \Lambda^{-1} x(0) + \omega) \implies \tilde{F} = (\Phi\tilde{\Lambda})^{-1}(\Omega+0.5 \, \Phi \Lambda^{-1}), \; \tilde{f} = (\Phi\tilde{\Lambda})^{-1}\omega$. 
+
+Set the first layer weights to $F = [-I \ I \ \tilde{F}]'$ and $f = [\bm{0} \ \bm{0} \ \tilde{f}]'$ so that $y_1(x) = [-x; \ x; \ \tilde{F}x + \tilde{f}]$. Set the weights of the pQP layer \eqref{eq:pQP} to $\epsilon = 0$ and $L = [I \ \bm{0} \ \bm{0}; \, \bm{0} \ I \ \bm{0}; \, \bm{0} \ \bm{0} \ \tilde{L}]$. If we partition the decision variable as $z = [\tilde{z} \ x^p \ x^n]'$, this results in 
+\begin{equation}
+	% \small
+	\label{eq:pQPtilde}
+	\min_{\tilde{z},x^p,x^n \geq 0} \, ||x^p - x(0)||^{2} + ||x^n + x(0)||^{2} + ||\tilde{L}\tilde{z} + \tilde{y}_1(x)||^{2} 
+\end{equation}
+which is a separable objective in $\tilde{z}$, $\tilde{x}^p$ and $\tilde{x}^n$. Due to the choice of $\tilde{L}$ and $\tilde{y}_1(x)$ in \eqref{eq:Landg1}, the last term of the pQP matches the dual $\mathds{D}2$ with the exception of its constant term -- not relevant for determining the optimal solution. Therefore, we have that $\tilde{z}^\star$ in \eqref{eq:pQPtilde} matches $\lambda^\star$ in $\mathds{D}2$. Regarding $x^{p\star}$, the $n$ optimizer components will satisfy $\forall i = 1,\dots,n$, $x^{p\star}_i = x_i(0)$ if $x_i(0) \geq 0$, else $x^{p\star}_i = 0$. Similarly, $x^{n\star}_i = -x_i(0)$ if $x_i(0) \leq 0$, else $x^{n\star}_i = 0$. Therefore, $x^{p\star} - x^{n\star} = x(0)$, and the output of the pQP layer \eqref{eq:pQPtilde} has the dual optimizer $\lambda^\star$ and the initial condition $x(0)$ encoded in it.
+
+Next set the weights of the second linear layer $y_3$ to $G = [- 0.5 \Lambda^{-1}\Phi' \ -0.5 \Lambda^{-1}\Gamma' \ \ 0.5\Lambda^{-1}\Gamma']$ and $g = \bm{0}$. Therefore, $y_3 = G \, [\tilde{z}^\star \ x^{p \star} \ x^{n\star}]' = G \, [\lambda^\star \ x^{p \star} \ x^{n\star}]' = U^\star$, where equality \eqref{eq:stationarity} was used in the last step. Finally, note that the last layer $y_4 = \text{Proj}_{\mathbb{U}}(y_3)$ will simply evaluate to $y_3$ since $y_3$ is the optimal primal solution $U^\star$, which satisfies the constraints \eqref{eq:constr} and necessarily belongs to $\mathbb{U}$. The theorem then follows from the fact that $x(0)$ in the above calculations can be taken to be any point $x$ in $\mathcal{X}$. $\square$
+
+Exactly matching the original MPC controller would require $L$ to have the same size of $\Phi \tilde{\Lambda}$ and $\epsilon = 0$ as shown. Nevertheless, we are interested precisely in reducing the complexity of the resulting controller through employing less parameters. In this process, choosing a regularizer $\epsilon > 0$ is beneficial since it ensures that the QP is bounded during the training phase for all possible parameters.
+
+Comment: Stability certification
+
+\section{Simulation results}
+
+
+\begin{figure}[!t]
+	\centering
+	\includegraphics[width=0.7\linewidth]{../images/chap4_simres_multicelldcdc}
+	\caption{Photos of the AHU room depicting the air ducts (top), the supply and return water pipes (top and bottom), and the three-way valve servomotor (bottom).}
+	\label{fig.asd}
+\end{figure}
+
+\section{Experimental results}
+
+
+A schematic representation of the buck converter considered in this work is shown in Figure~\ref{fig:buck} and its parameters are found in Table~\ref{tab:param}. $V_{IN}$, $V_D$, $L$, and $C$ refer respectively to the input voltage, the diode forward drop, the inductance and the capacitance; whereas $R_{ON}$, $R_L$, $R_C$ and $R_{O}$ refer to the switch on-resistance, the inductor parasitic resistance, the capacitor parasitic resistance, and the output load.
+
+We choose as state variables the inductor current and the output voltage
+\begin{equation}
+	x = \begin{bmatrix} x_1 \\ x_2 \end{bmatrix}
+	= \begin{bmatrix} i_L \\ v_O \end{bmatrix}
+\end{equation}
+
+
+%\begin{table}[b]
+%	\begin{center}
+%		\caption{Parameters of the DC-DC converter} 
+%		\begin{tabular}{ccccc}
+%			\specialrule{.15em}{.1em}{.1em} 
+%			$V_{IN}$ & $V_{OUT}$ & $V_{D}$ & $L$ & $C$ \\ 
+%			\specialrule{.05em}{.1em}{.1em}
+%			15$\,$V & 5$\,$V & 0.1$\,$V & 10$\,$mH & 56$\, \mu$F \\ \specialrule{.05em}{.1em}{.1em} \\
+%			\specialrule{.15em}{.1em}{.1em}
+%			$R_{ON}$ & $R_{L}$ & $R_{C}$ & $R_{O}$ & $f_{\text{sw}}$ \\
+%			\specialrule{.05em}{.1em}{.1em}
+%			5$\,$m$\Omega$ & 2$\,\Omega$ & 330$\,$m$\Omega$ & 100$\,\Omega$ & 20$\,$kHz \\ 
+%			\specialrule{.05em}{.1em}{.1em}
+%		\end{tabular}
+%	\end{center}
+%	\label{tab:param}
+%\end{table}
+
+\begin{table}[b]
+	\begin{center}
+		\caption{Parameters of the DC-DC converter} 
+		\begin{tabular}{cccccccccc}
+			\specialrule{.15em}{.1em}{.1em} 
+			$V_{IN}$ & $V_{OUT}$ & $V_{D}$ & $L$ & $C$ & $R_{ON}$ & $R_{L}$ & $R_{C}$ & $R_{O}$ & $f_{\text{sw}}$ \\
+			\specialrule{.05em}{.1em}{.1em}
+			15$\,$V & 5$\,$V & 0.1$\,$V & 10$\,$mH & 56$\, \mu$F &
+			5$\,$m$\Omega$ & 2$\,\Omega$ & 330$\,$m$\Omega$ & 100$\,\Omega$ & 20$\,$kHz \\ 
+			\specialrule{.05em}{.1em}{.1em}
+		\end{tabular}
+	\end{center}
+	\label{tab:param}
+\end{table}
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[width=0.8\linewidth]{../images/chap4_buck_schematic.pdf}
+	\caption{A circuit diagram of the buck converter including its parasitic resistances and the diode forward voltage drop. The feedback loop is closed by the MCU, which implements our proposed PWA-NN controller.}
+	\label{fig:buck}
+\end{figure}
+
+
+The power switch is operated at a constant frequency $f_{\text{sw}}$ and variable duty cycle, which is taken to be the control variable $u = \delta$. Following the classical time-averaging technique, Kircchoff's circuit laws are used to derive differential equations for both when the switch is open, and when it is closed. The expressions can be found in Appendix~\ref{ap.A}. Averaging these equations with $\delta$ as a weight yields
+
+\begin{subequations}
+	\begin{flalign}
+		\dot{x}_1 = & \small{-\frac{R_L}{L}x_1 - \frac{1}{L}x_2 + \frac{V_{IN}+V_D}{L}u - \frac{R_{ON}}{L} x_1 u - \frac{V_D}{L} \label{eq.x1}} && \\[5pt]
+		\dot{x}_2 = & \small{-\frac{R_C R_O R_L C + R_O L}{(R_C + R_O) L C}x_1 -\frac{R_C R_O C + L}{(R_C + R_O)L C}} x_2 + \frac{R_C R_O (V_{IN} + V_D)}{(R_C+R_O)L} u  &&\nonumber \\
+		&- \frac{R_C R_O R_{ON}}{(R_C + R_O)L} x_1 u - \frac{R_C R_O V_D}{(R_C + R_O)L} \label{eq.x2} && 
+	\end{flalign}
+\end{subequations}
+
+The expressions above are not linear since the inductor current and the duty cycle multiply each other. As the goal is to design a linear MPC controller, linearization is needed. We first fix the output voltage to the desired value $x_{2eq}$ and solve for the current and duty cycle steady-state values
+%
+\begin{align}
+	x_{1eq} &= \frac{x_{2eq}}{R_O} \label{eq.x1eq}\\[5pt]
+	u_{eq} &= \frac{R_O V_D + (R_L + R_O) x_{2eq}}{R_O(V_{IN}+V_D)-R_{ON} x_{2eq}} \label{eq.ueq}
+\end{align}
+
+Finally, \eqref{eq.x1} and \eqref{eq.x2} are expanded around $(x_{1eq},u_{eq})$ and the linear terms are kept, leading to the familiar state-space equations
+$\dot{x} = A_{ct} x + B_{ct} u$ where
+\begin{align}
+	A_{ct} & = \begin{bmatrix} 
+		-\frac{R_L+R_{ON} u_{eq}}{L} & -\frac{1}{L} \\[5pt]
+		-\frac{R_C R_O (R_L C - R_{ON} C u_{eq}) + R_O L}{(R_C + R_O) L C} & -\frac{R_C R_O C + L}{(R_C+R_O) L C}
+	\end{bmatrix} 
+	\\[5pt]
+	B_{ct} & = \begin{bmatrix} 
+		\frac{V_{IN} + V_D - R_{ON} x_{1eq}}{L} \\[5pt]
+		\frac{R_C R_O(V_{IN}+V_D-R_{ON}x_{1eq})}{(R_C+R_O)L}
+	\end{bmatrix}
+\end{align}
+
+As a last step, a discrete-time model $x_{t+1} = A x_{t} + B u_{t}$ is obtained by integrating the continuous-time dynamics using the standard zero-order hold method. The chosen discretization frequency was $f_{\text{samp}} = 10\,$kHz, which is also the predictive controller frequency. 
+
+\begin{figure}[!t]
+	\centering
+	\includegraphics[width=0.7\linewidth]{../images/chap4_buck}
+	\caption{Photos of the AHU room depicting the air ducts (top), the supply and return water pipes (top and bottom), and the three-way valve servomotor (bottom).}
+	\label{fig.asd}
+\end{figure}
+
+
+The goal is to attain a fast start-up response with as little overshoot as possible and regulate the output voltage $v_O$ to $v_{\text{eq}}=5\,$V. Furthermore, an inductor current constraint of 200$\,$mA and voltage constraint of $7\,$V must be respected at all times. The prediction horizon has to be long enough to yield a large feasible set \cite{rawlings2017model} and we chose $N = 10$ steps. A standard quadratic objective was employed\footnote{In the MPC objective function, the squared weighted norms read as in $\Vert x_t - x_{\text{ref}} \Vert_Q^2 = (x_t - x_{\text{ref}})^\top Q \, (x_t - x_{\text{ref}})$.}, penalizing the deviation of the states and control variable from the reference values $x_{\text{eq}} = \begin{bmatrix} 0.05 & 5 \end{bmatrix}^\top$, $u_{\text{eq}} = 0.3379$. The final optimal-control formulation was
+%
+\begin{subequations}
+	\label{eq:mpcFormulation}
+	\begin{align}
+		\min_{X,U} \ & \sum_{t=0}^{N-1} \big( \Vert x_t - x_{\text{eq}} \Vert_Q^2 + \Vert u_t - u_{\text{eq}} \Vert_R^2 \big) + \Vert x_N - x_{\text{eq}} \Vert_P^2 \\
+		\text{s.t.} \ & \; \forall t = 0,\dots,N-1 \nonumber \\
+		& \; x_{t+1} = A x_{t} + B u_{t} \\
+		& \begin{bmatrix} i_L^{\text{min}} \\ v_O^{\text{min}}\end{bmatrix}
+		\leq x_{t} \leq 
+		\begin{bmatrix} i_L^{\text{max}} \\ v_O^{\text{max}}\end{bmatrix} \\
+		& \; u^{\text{min}} \leq u_{t} \leq u^{\text{max}} \\
+		& \; x_{N} \in \mathcal{X}_N \\
+		& \; x_0 = x(0)
+	\end{align}
+\end{subequations}
+with state and control constraints
+\begin{align}
+	x^{\text{min}} &= 
+	\begin{bmatrix} i_L^{\text{min}} \\ v_O^{\text{min}}\end{bmatrix} = 
+	\begin{bmatrix} 0 \, \text{mA} \\ 0 \, \text{V}\end{bmatrix} \\[3pt]
+	x^{\text{max}} &= 
+	\begin{bmatrix} i_L^{\text{max}} \\ v_O^{\text{max}}\end{bmatrix} = 
+	\begin{bmatrix} 200 \, \text{mA} \\ 7 \, \text{V}\end{bmatrix} \\[3pt]
+	u^{\text{min}} &= 0, \quad u^{\text{max}} = 1 
+\end{align}
+%
+The matrix weights were $Q = \text{diag}(90,1)$, $R = 1$, and $P$ was the solution of the associated discrete-time algebraic Ricatti equation. $\mathcal{X}_N$ was chosen to be the the system's maximal invariant set under the corresponding LQR policy. Both the terminal ingredients ($P$ and $\mathcal{X}_N$) can be easily calculated with the aid of the Multi-Parametric Toolbox (MPT) \cite{mpt} for MATLAB, and are employed to ensure recursive feasibility and closed-loop stability \cite{rawlings2017model}.
+
+As a final step, the MPC controller \eqref{eq:mpcFormulation} was solved off-line using MPT, which yielded a piecewise-affine (PWA) function $\pi(x)$ that maps states directly to optimal control inputs. As well known in the area of explicit model predictive control \cite{alessio2009survey}, this function partitions the space of feasible states $\mathcal{X}$ into regions described by sets of linear inequalities. Then, applying the predictive controller on-line boils down to implementing the look-up table of feedback gains
+\begin{align}
+	u = \pi(x) = 
+	\begin{cases}
+		F_1 x + g_1, &\text{if } x \in \text{region } 1 \\
+		\quad \; \dots & \qquad \dots \\
+		F_M x + g_M, &\text{if } x \in \text{region } M \\
+	\end{cases}
+	\label{eq.PWA}
+\end{align}
+
+As provided by MPT, the computed control policy $\pi(x)$ had $M = 70$ regions, a number too large to be embedded into the target MCU due to the large storage and computational demands (more details are given in Section~\ref{sec.complRed}). These implementation issues motivate the use of our PWA-NN complexity reduction scheme.
+
+\section{Learning a faithful still simpler representation of the controller}
+\label{sec.complRed}
+
+Explicit MPC controllers are the exact parametric solution of their optimization counterparts. The geometric landscape depicted by the PWA function $\pi(x)$ is composed of numerous linear pieces patched together. At times, neighboring regions share the same control law and, depending on their arrangement, they could be merged into an equivalent single one. Moreover, the overall surface usually presents two scales of complexity: a general shape and, inspecting it more closely, intricate small details. Based on these observations, it is reasonable to try to reproduce the rough shape of $\pi(x)$ without necessarily replicating its small wiggles.
+
+\subsection{The general architecture}
+
+The architecture of the piecewise-affine neural network used to learn $\pi(x)$ is shown in Figure~\ref{fig:NN}. It has two affine layers (L1 and L3), an optimization problem as the activation layer \cite{amos2017optnet} (L2) and one projection layer (L4) that in this specific case is simply a saturation function. The latter is needed to ensure that the final control values produced by the NN are within the control bounds $0 \leq u \leq 1$. As discussed in \cite{maddalena2019neural}, the motivation behind the structure is that of learning the dual MPC problem: L1 maps the state $x$ to the dual space, where L2 represents the dual optimization problem that is solved, L3 then maps the solution back to the primal space, and finally L4 guarantees it respect the control constraints. 
+
+As opposed to other approaches to learning MPC controllers with NN \cite{zhang2020near,lucia2020deep}, the one explored here can be translated to a \textit{closed-form} piecewise-affine function. More specifically, the parametric quadratic program in layer L2 can be solved off-line after training (e.g. by using MPT), yielding a PWA map of the same form as \eqref{eq.PWA}. The complexity of such function in terms of the number of regions can be adjusted by choosing the size of matrix $H \in \mathbb{R}^{n_z \times n_z}$ inside L2. Fixing $n_z$ also defines the sizes of all remaining trainable parameters highlighted in orange in Figure~\ref{fig:NN}. The result presented next assures the designer that this PWA-NN structure is suitable for any possible predictive controller.
+
+
+The optimization problem associated with training this NN---in fact, almost any NN architecture---is non-convex. As a consequence, even though there might exist a combination of parameters and weights capable of exactly representing the desired function, reaching them is not an easy task. Since local minima exist, the training process has to be performed multiple times with different initializations. Nevertheless, it is reasonably accepted in the machine learning community that these loss functions possess many high quality local minima, and pursuing a global optimum is irrelevant in this context (see for instance the influential work \cite{choromanska2015loss}).
+
+Theorem~1 establishes that the size of the NN could be chosen to exactly replicate $\pi(x)$, but that would defeat its purpose since the goal is to learn a faithful but \textit{simpler} version of the MPC controller. For this reason, we gradually increased the size $n_z$ during the training process until a desirable approximation quality was attained. From a machine learning perspective, the problem could be interpreted as an approximation one, where the ground-truth is known.
+
+
+The explicit control law $\pi(x)$ was sampled in order to collect a set of state-control pairs
+\begin{equation}
+	\{(x_d,u_d) \,|\, d=1,\dots,D\}
+\end{equation}
+where $x_d$ can be regarded as features and $u_d$ as labels. A total of $D = 5000$ points were gathered randomly using a uniform distribution over the set of feasible states. We highlight that the samples could have been acquired directly from \eqref{eq:mpcFormulation} as well. Next, the data-points were used to train the internal parameters of the layers shown in Figure~\ref{fig:NN}. 
+
+A standard backpropagation approach can be used to iteratively update the NN parameters since, as shown in \cite{amos2017optnet}, optimization layers of this type are differentiable (except on sets of measure zero, where subgradients can be used). The \texttt{PyTorch} and \texttt{OptNet} packages for Python were employed to code the NN and mini-batch stochastic gradient descent was used to train it. The batch size was chosen to be $50$, and the whole dataset was presented to the algorithm a total of $150$ times, i.e., $150$ epochs. In order to achieve a balanced learning throughout the domain, the currents and voltages values that formed the input locations $x_d$ were normalized to a range of $[0,1]$. Furthermore, all trainable weights were initialized randomly. The code was run on a 3.1~GHz Intel Core i7 laptop with 16~GB 2133~MHz of memory. As previously explained, we gradually increased the size $n_z$ of the PWA-NN. Training the network once took approximately $35\,$mins without any GPU acceleration. With $n_z=3$, after only $5$ initializations, the network presented a very low mean squared error training loss: $1.66\times 10^{-7}$. As for the testing phase, we calculated the true outputs $u = \pi(x)$ and the predicted values $\hat{u} = \hat{\pi}(x)$ on a grid of points; the latter were capable of closely reproducing the original controller as shown in the top plots of Figure~\ref{fig:part}.
+
+In order to assess the complexity of the learned controller, its L2 layer was converted into a PWA function using the MPT toolbox. As can be seen from lower plots in Figure~\ref{fig:part}, the number of region was greatly reduced: from 70 in the original partition to 6 in the simplified one, a reduction of 91\%. The total memory required to store the control law parameters was reduced from 9.25~kB to 528~B. The latter quantities were calculated by counting the total number of constants needed to describe all the inequalities that compose the polytopes and the remaining NN layers, and assuming that each of them occupies 1 \textit{word} of space.
+
+\clearpage
+
+\begin{figure}
+	\centering
+	\includegraphics[width=0.65\linewidth]{../images/chap4_scope_ol} \\[5pt]
+	\includegraphics[width=0.65\linewidth]{../images/chap4_scope_cl1} \\[5pt]
+	\includegraphics[width=0.65\linewidth]{../images/chap4_scope_cl2}
+	\caption{Photos of the AHU room depicting the air ducts (top), the supply and return water pipes (top and bottom), and the three-way valve servomotor (bottom).}
+	\label{fig.asd}
+\end{figure}
+
+\clearpage

@@ -2,7 +2,7 @@
 \chapter{Safely learning with kernels}
 \markboth{Learning with kernels}{Learning with kernels}
 
-In this chapter, we discuss the problem of learning and elucidate what viewpoint will be taken to tackle it. Next, novel results are presented concerning uncertainty estimation in a kernelized setting. Finally, some examples are given to illustrate the general use of the theory.
+In this chapter, we will discuss the problem of learning from data and elucidate what viewpoint will be taken to tackle it. Next, novel results are presented concerning uncertainty estimation in a kernelized setting. Finally, some examples are given to illustrate the general use of the theory.
 
 \section{The problem of learning}
 
@@ -10,7 +10,7 @@ At its core, learning refers to the process of \textit{gathering information} an
 
 Information comes in many science fields in the form of data, samples, sometimes referred to as examples. In modern machine learning, people study a number of rather abstract subjects ranging from the traits that distinguish images of muffins and chihuahuas, to the link between passengers' features and their survival likelihood in case of a ship sinking event.  The mathematical formalism often used to study the link between examples and these phenomena is statistics. This choice is convenient because it can describe the possible non-determinism of outcomes through the concepts of distributions and samples; and because it provides us with plenty of tools to carry out learning, i.e., improve our knowledge about the phenomenon through the samples at hand. In this chapter, we will however adopt a different standpoint to study and tackle the problem of learning, which is, as we will later argue, more aligned with the ways control engineers are taught to see physical systems. This standpoint is the one offered by approximation theory.
 
-\comment{Statistical learning and approximation theory are not in opposition. Indeed, we can define the function of interest as the conditional \cite{temlyakov2008approximation}, perhaps talk about Belkin's work linking the two and advocating for using the approximation lenses.}
+\mycomment{Statistical learning and approximation theory are not in opposition. Indeed, we can define the function of interest as the conditional \cite{temlyakov2008approximation}, perhaps talk about Belkin's work linking the two and advocating for using the approximation lenses.}
 
 \begin{definition}
 	\textbf{(Kernel)} Given an arbitrary non-empty set $\Omega$, a kernel $k$ is any symmetric function of the form
@@ -19,22 +19,291 @@ Information comes in many science fields in the form of data, samples, sometimes
 	\end{equation}
 \end{definition}
 
-\comment{Talk about kernels (can be seen as a library of non-linearities) and show examples of kernels. Say however, we'll restrict our attention to a specific class of them.}
+\mycomment{Talk about kernels (can be seen as a library of non-linearities) and show examples of kernels. Say however, we'll restrict our attention to a specific class of them.}
+
+\begin{figure}[t]
+	\label{fig.pd_kernels}
+	\centering
+	\includegraphics[scale=0.4]{../images/chap2_kernel_li.pdf} \hspace{3pt}
+	\includegraphics[scale=0.4]{../images/chap2_kernel_se.pdf} \hspace{3pt}
+	\includegraphics[scale=0.4]{../images/chap2_kernel_rq.pdf} \\[3pt]
+    \includegraphics[scale=0.4]{../images/chap2_kernel_ex.pdf} \hspace{3pt}
+    \includegraphics[scale=0.4]{../images/chap2_kernel_sg.pdf} \hspace{3pt}
+    \includegraphics[scale=0.4]{../images/chap2_kernel_wv.pdf} 
+	\caption{todo}
+\end{figure}
 
 \begin{definition}
-	\textbf{(Kernel matrix)} Given finite set of inputs $X = \{x_1,\dots,x_N\} \subset \Omega$, the $N \times N$ matrix $K_{XX}$ with entries $[K_{XX}]_{ij} = k(x_i,x_j)$ is called the kernel matrix of $k$ associated with the points $X$.
+	\textbf{(Kernel matrix)} Let $X = \{x_1,\dots,x_n\} \subset \Omega$ be a finite set of points. The $n \times n$ matrix $K_{XX}$ with entries $[K_{XX}]_{ij} = k(x_i,x_j)$ is called the kernel matrix of $k$ associated with $X$.
 \end{definition}
 
 
 \begin{definition}
-	\textbf{(Mercer kernel)} A kernel function $k$ is called a Mercer kernel if for any finite subset of points $X \subset \Omega$, its kernel matrix is positive definite $K_{XX} \succ 0$.
+	\label{def.pd_kernel}
+	\textbf{(Positive-definite kernel)} A kernel function $k$ is said to be positive-definite if for any finite subset of points $X \subset \Omega$, the kernel matrix satisfies $K_{XX} \succeq 0$. If, in particular, $K_{XX} \succ 0$, then the kernel is strictly positive-definite.
 \end{definition}
 
+Aside from the last definition, we underline that there exist broader classes of kernel functions such as the \textit{conditionally positive-definite} one \cite[§2.4]{scholkopf2002learning}. In this chapter however, our attention will be focused on the (positive-definite) PD set, from which some examples are shown in Figure~\ref{fig.pd_kernels}.
 
-\section{The problem of uncertainty quantification}
+
+\section{The uncertainty quantification problem}
+
+
+Herein we consider a positive-definite kernel $k:\Omega \times \Omega \rightarrow \mathds{R}$ along with its corresponding RKHS $\mathcal{H} \subset \mathds{R}^\Omega$. Our input space is taken to be a compact subset of the Euclidean space $\Omega \subset \mathbb{R}^n$. 
+
+\begin{assumption}
+	\label{as:kernelRkhs}
+	The kernel function $k$ is strictly positive-definite and its RKHS $\mathcal{H}$ contains the ground-truth $f^\star$.
+\end{assumption}
+
+\begin{assumption}
+	An estimate $\Gamma \geq \rknorm{f^\star}$ for the ground-truth norm is known.
+\end{assumption}
+
+A dataset $\{(x_i,\mathsf{y}_i)\}_{i=1}^d$ is given to us, being composed of inputs $x_i \in \Omega$ and outputs $\mathsf{y}_i \in \mathbb{R}^{n_i}$, $\mathsf{y}_i = \begin{bmatrix}y_{i,1} & \dots & y_{i,n_i} \end{bmatrix}^\top$ that contain $n_i$ scalar samples collected at the same input location $x_i$. The dataset carries information about an underlying ground-truth map $f^\star \in \mathcal{H}$ according to
+\begin{equation}
+	y_{i,j} = f^\star(x_i) + \delta_{i,j}
+\end{equation}
+where $\delta_{i,j}$ represents an additive measurement noise that is assumed to be uniformly bounded \textcolor{red}{as stated next.}
+
+\begin{assumption}
+	\label{as:noisebound}
+	The magnitude of each noise realization $\delta_{i,j}$ is bounded by a known scalar quantity $\bar{\delta}$, i.e. $|\delta_{i,j}| \leq \bar \delta, \forall i,j$.
+\end{assumption}
+
+To upper bound the ground-truth values, we consider the following infinite-dimensional variational problem $\mathds{P}0$, with the query point $x \in \Omega$ as a parameter
+\begin{empheq}[box={\mymathbox[colback=black!2,drop small lifted shadow, sharp corners]}]{equation}
+		\label{eq.infdimprob}
+		\text{F}(x) = \sup_{f \, \in \mathcal{H}} \, \{ f(x) : \rknorm{f} \leq \Gamma, \infnorm{f_X - \mathsf{y}} \leq \bar \delta \} 
+\end{empheq}
+%\begin{equation}
+%\label{eq.infdimprob}
+%		\text{F}(x) = \sup_{f \, \in \mathcal{H}} \, \{ f(x) : \rknorm{f} \leq \Gamma, \infnorm{f_X - \mathsf{y}} \leq \bar \delta \} 
+%\end{equation}
+where $f_X := \Lambda \begin{bmatrix} f(x_1) & \dots & f(x_d) \end{bmatrix}^\top$ is the vector of evaluations at the input locations, which are repeated whenever multiple outputs are available at a given input. This is accomplished through $\Lambda$ as defined in Appendix~\ref{app.thebigmatrix}. We highlight that the supremum is guaranteed to exist thanks to \eqref{eq.uniformBound}. Given a query location $x$, $\mathds{P}0$ yields the tightest
+%\footnote{\textcolor{red}{This adjective has to be understood in the sense that for any other possible candidate bound $\epsilon$ such that $\epsilon<F(x)$, there exists an $\tilde{f}$ compatible with our assumptions that violates this bound. This means, $\Vert \tilde{f} \Vert_\mathcal{H} \leq \Gamma$, $\Vert \tilde{f}_X-\mathsf{y} \Vert_\infty\leq \bar{\delta}$, and $\tilde{f}(x)>\epsilon$.}} 
+upper bound for $f(x)$ over all members $f \in \mathcal{H}$ of our hypothesis space that are consistent with our dataset, as well as our knowledge on the ground-truth complexity $\rknorm{f} \leq \Gamma$. Note how linking the function evaluations $f_X$ and the outputs $\mathsf{y}$ plays a role analogous to conditioning stochastic processes on past observations in statistical frameworks.
+
+Consider now the convex parametric quadratically-constrained linear program $\mathds{P}1$ 
+\begin{empheq}[box={\mymathbox[colback=black!2,drop small lifted shadow, sharp corners]}]{align}
+	\label{eq.P1case1}
+	{\normalfont \text{C}(x)} \; = \max_{c \in \mathds{R}^d, c_x \in \mathds{R}}&  \quad c_x  \\ 
+	\text{\normalfont subj. to}& \ \; 
+	\begin{bmatrix}
+		c \\
+		c_x
+	\end{bmatrix}^\top 
+	\begin{bmatrix}
+		K_{XX} & K_{Xx} \\
+		K_{xX} & k(x,x)
+	\end{bmatrix}^{-1} 
+	\begin{bmatrix}
+		c \\
+		c_x
+	\end{bmatrix} \leq \Gamma^2  \label{eq.P1constrA} \\
+	& \ \; \; \infnorm{\Lambda c - \mathsf{y}} \leq \bar\delta \label{eq.P1constrB}
+\end{empheq}
+%\begin{subequations}
+%	\label{eq.P2case1}
+%	\begin{align}
+%		{\normalfont \text{C}(x)} \; = \max_{c \in \mathds{R}^d, c_x \in \mathds{R}}&  \quad c_x  \\ 
+%		\text{\normalfont subj. to}& \ \; 
+%		\begin{bmatrix}
+%			c \\
+%			c_x
+%		\end{bmatrix}^\top 
+%		\begin{bmatrix}
+%			K_{XX} & K_{Xx} \\
+%			K_{xX} & k(x,x)
+%		\end{bmatrix}^{-1} 
+%		\begin{bmatrix}
+%			c \\
+%			c_x
+%		\end{bmatrix} \leq \Gamma^2 \label{eq.P2constrA} \\
+%		& \ \; \; \infnorm{\Lambda c - \mathsf{y}} \leq \bar\delta \label{eq.P2constrB}
+%	\end{align}
+%	\label{eq.P2}%
+%\end{subequations}
+for any $x \in \Omega \backslash \{X\}$, and extend its value function to points $x = x_i \in X$ with the solution of $\mathds{P}1': \, \text{C}(x) \,=\, \max_{c \in \mathbb{R}^d} \{c_i \, | \, c^\top K_{XX}^{-1}c \leq \Gamma^2, \, \infnorm{\Lambda \, c - \mathsf{y}} \leq \bar \delta \}$.
+This can be thought of as finding a map that interpolates the points $\{(x_i, c_i)\}_{i=1}^d$ and maximizes its value $c_x$ at the input location $x$. The two cases $\mathds{P}1$ and $\mathds{P}1'$ are distinguished due to the matrix in \eqref{eq.P1constrA} becoming singular for any $x\in X$, and since it allows for one decision variable to be eliminated. Finally, the connection between \eqref{eq.infdimprob} and \eqref{eq.P2} is stated next.
+
 
 \begin{theorem}
-	This is some truth
+	 \label{thm.main}
+	 {\normalfont \textbf{(Finite-dimensional equivalence):}}
+	The objective in $\mathds{P}0$ attains its supremum in $\mathcal{H}$ and ${\normalfont \text{F}}(x) = {\normalfont \text{C}}(x)$ for any $x \in \Omega$.
 \end{theorem}
 
-Bla bla
+\begin{my_proof}
+	\label{app.thmproof}
+	%
+	Let $\mathds{X} := X \cup \{x\}$ and define the finite-dimensional subspace $\mathcal{H}^\Vert=\{f\in\mathcal{H}: f \in \text{span}(k(x_i,\cdot), x_i \in \mathds{X})\}$. Furthermore, let $\mathcal{H}^\perp = \{g\in \mathcal{H}: \rkinner{g}{f^\Vert}=0, \forall f^\Vert \in \mathcal{H}^{\Vert} \}$ be the orthogonal complement of $\mathcal{H}^{\Vert}$. Then, we have $\mathcal{H}=\mathcal{H}^{\Vert} \oplus \mathcal{H}^\perp$ and for all $f\in \mathcal{H}$, $\exists f^{\Vert} \in \mathcal{H}^{\Vert}, f^\perp \in \mathcal{H}^\perp : f = f^{\Vert} + f^\perp$. By employing the latter decomposition and using the reproducing property, we can reformulate $\mathds{P}0$ in terms of $\mathcal{H}^{\Vert}$ and $\mathcal{H}^\perp$ as
+	\begin{align}
+%		& \sup_{\substack{f^{\Vert} \, \in \mathcal{H}^{\Vert} \\ f^\perp \, \in \mathcal{H}^\perp}} \hspace{-50pt} &&\left\{ 
+%		\begin{aligned}
+%			&\rkinner{f^{\Vert}+f^\perp}{k(x,\cdot)} :\\ &\rknorm{f^{\Vert}+f^\perp}^2 \leq \Gamma^2, \infnorm{(f^{\Vert}+f^\perp)_X - \mathsf{y}} \leq \bar \delta 
+%		\end{aligned}
+%		\right\} 
+		& \sup_{\substack{f^{\Vert} \, \in \mathcal{H}^{\Vert} \\ f^\perp \, \in \mathcal{H}^\perp}} &&\left\{ 
+		\begin{aligned}
+			&\rkinner{f^{\Vert}+f^\perp}{k(x,\cdot)} : \hspace{-8pt}&\rknorm{f^{\Vert}+f^\perp}^2 \leq \Gamma^2, \infnorm{(f^{\Vert}+f^\perp)_X - \mathsf{y}} \leq \bar \delta 
+		\end{aligned}
+		\right\} 
+		\\
+		\overset{(i)}{=}& \sup_{\substack{f^{\Vert} \, \in \mathcal{H}^{\Vert} \\ f^\perp \, \in \mathcal{H}^\perp}} &&\left\{ f^{\Vert}(x) : \rknorm{f^{\Vert}}^2+\rknorm{f^\perp}^2 \leq \Gamma^2, \infnorm{f_{X}^\Vert - \mathsf{y}} \leq \bar \delta \right\} \\
+		\overset{(ii)}{=}& \sup_{f^{\Vert} \, \in \mathcal{H}^{\Vert}} &&\left\{ f^{\Vert}(x) : \rknorm{f^{\Vert}}^2 \leq \Gamma^2, \infnorm{f^{\Vert}_{X} - \mathsf{y}} \leq \bar \delta \right\} \label{eq.last}
+	\end{align}
+	In $(i)$, the $f^\perp$ component vanished from the cost and from the last constraint due to orthogonality w.r.t. $k(x_i,\cdot) \in \mathcal{H}^\Vert$ for any $x_i \in \mathds{X}$; moreover, the Pythagorean relation $\rknorm{f}^2 = \rknorm{f^{\Vert}}^2 + \rknorm{f^\perp}^2$ was also used. To arrive at the second equality $(ii)$, one only has to note that the objective is insensitive to $f^\perp$ and that any $f^\perp \neq 0_{\mathcal{H}}$ would tighten the first constraint. 
+	
+	The attainment of the supremum is addressed next. Consider \eqref{eq.last} and denote the members of $\mathcal{H}^\Vert$ simply as $f$. $\rknorm{f}^2 \leq \Gamma^2$ is a closed and bounded constraint as it is the sublevel set of a norm. We transform $\infnorm{f_{X} - \mathsf{y}} \leq \bar \delta$ into $\vert f(x_i) - y_{i,j} \vert \leq \bar \delta$, $i=1,\dots,d, \, j =1,\dots,n_i$. Sets of the form $\{a \in \mathbb{R}: \vert a \vert \leq b \}$ are clearly closed in $\mathbb{R}$, hence \{$f(x_i) \in \mathbb{R} : \vert f(x_i) - y_{i,j}\vert \leq \bar \delta, \forall i,j \}$ is also closed. For any $x_i$, the evaluation functional $L_{x_i}(f) = f(x_i)$ is a linear operator and thus pre-images of closed sets are also closed. Consequently, $\{f \in \mathcal{H}^\Vert : \vert f(x_i) - y_{i,j}\vert \leq \bar \delta, \forall i,j \}$ is closed in $\mathcal{H}^\Vert$. The intersection of a finite number of closed sets is necessarily closed, thus all constraint present in \eqref{eq.last} define a closed feasible set. Since $\mathcal{H}^{\Vert}$ is finite-dimensional, any closed and bounded subset of it is compact (Heine–Borel); therefore, the continuous objective $L_x(f) = f(x)$ in \eqref{eq.last} attains a maximum by the Weierstrass extreme value theorem. 
+	
+	Finally, we establish the connection between $\mathds{P}0$ and $\mathds{P}1$. From the above arguments, an optimizer for $\mathds{P}0$ must lie in $\mathcal{H}^\Vert$. The members $f \in \mathcal{H}^\Vert$ have the form $f(z) = \alpha^\top K_{\mathds{X}z}$, being defined by the $\alpha$ weights. Due to the positive-definiteness of $k$, there exists a bijective map between outputs at the $\mathds{X}$ locations $f_{\mathds{X}} = \begin{bmatrix} f(x_1) & \dots & f(x_d) & f(x) \end{bmatrix}^\top$ and the weights $\alpha$, namely $\alpha = K_{\mathds{X}\mathds{X}}^{-1}f_{\mathds{X}}$. $K_{\mathds{X}\mathds{X}}$ denotes the kernel matrix associated with the set $\mathds{X} = X \cup \{x\}$. Consequently, optimizing over $f \in \mathcal{H}^\Vert$ is equivalent to optimizing over $\begin{bmatrix} f(x_1) & \dots & f(x_d) & f(x) \end{bmatrix}^\top =: \begin{bmatrix}c^\top & c_x\end{bmatrix}^\top$. The bounded norm condition can be recast as $\rknorm{f}^2 = \rkinner{f}{f} = \alpha^\top K_{\mathds{X}\mathds{X}} \alpha = \begin{bmatrix}c^\top & c_x\end{bmatrix} K_{\mathds{X}\mathds{X}}^{-1} \begin{bmatrix}c^\top & c_x\end{bmatrix}^\top$. The remaining constraint and the objective are straightforward. Noting that this reformulation is valid for any $x \in \Omega$ concludes the proof. 
+\end{my_proof}
+
+
+Given our knowledge on the noise influence $\bar \delta$, it is natural to ask what the limits of the uncertainty quantification technique considered herein are. For example, is the width of the envelope $\text{C}(x) - \text{B}(x)$ restricted to a certain minimum value that cannot be reduced even with the addition of new data? From \eqref{eq.P2constrB}, it is clear that at any input location $x_i \in X$, $\text{C}(x_i)$ and $\text{B}(x_i)$ cannot be more than $2\bar \delta$ apart. In addition to that, the presence of the complexity constraint \eqref{eq.P2constrA} can bring the two values closer to each other. Depending on how restrictive this latter constraint is for a given $x_i$, the corresponding output $y_i$ might lie outside the interval between $\text{C}(x_i)$ and $\text{B}(x_i)$. In this case, the resulting width is considerably reduced as illustrated in Figure~\ref{fig.riskBound} (left).
+
+\begin{figure}[b]
+	\centering
+	\includegraphics[scale=0.5]{../images/chap2_width_A.pdf} \hspace{8pt}
+	\includegraphics[scale=0.5]{../images/chap2_width_B.pdf}
+	\caption{(Left) A sample lying outside of the uncertainty envelope, implying that the width is smaller than $\bar \delta$ at $x_j$. (Right) Redundant information is used to shrink the uncertainty envelope. In this scenario, we recover the ground-truth value at $x_i$ as $\text{C}(x_i) = \text{B}(x_i) = f^\star(x_i)$.}
+	\label{fig.riskBound}
+\end{figure}
+
+\begin{proposition} 
+	\label{prop.smallWidth}
+	{\normalfont \textbf{(Width smaller than the noise bound):}}
+	If $\exists \mathsf{y}_i$ such that $y_{i,j} > {\normalfont C}(x_i)$ or $y_{i,j} < \text{B}(x_i)$ for some $j$, then $\text{C}(x_i) - \text{B}(x_i) \leq \bar \delta$.
+\end{proposition}
+\begin{proof}
+	Follows from $\text{C}(x_i) \geq \text{B}(x_i)$, $\text{C}(x_i) \leq y_{i,j} + \bar \delta$ and $\text{B}(x_i) \geq y_{i,j} - \bar \delta$ for any $i=1,\dots,d$ and any $j=1,\dots,n_i$.\QED 
+\end{proof} 
+Suppose now one has sampled $(x_i,\mathsf{y}_i)$ with $\mathsf{y}_i = \begin{bmatrix} y_{i,1} & y_{i,2} \end{bmatrix}^\top$, $y_{i,1} = f^\star(x_i) + \bar \delta$ and $y_{i,2} = f^\star(x_i) - \bar \delta$. Then there is no uncertainty whatsoever about $f^\star$ at $x_i$ since $f^\star(x_i) = (y_{i,1} + y_{i,2})/2$ is the only possible value attainable by the ground-truth. This illustrates that the possibility of having multiple outputs at the same location allows for the uncertainty interval to shrink past the $\bar \delta$ width, and eventually even reduce to a singleton as shown in Figure~\ref{fig.riskBound} (right). Notwithstanding, the addition of a new datum to an existing dataset|be it in the form of a new output at an already sampled location or a completely new input-output pair|can only reduce the uncertainty.
+
+\begin{proposition} {\normalfont \textbf{(Decreasing uncertainty):}}
+	Let $C_{{\normalfont 1}}(x)$ denote the solution of $\mathds{P}1$ with a dataset $D_1 = \{(x_i,\mathsf{y}_i)\}_{i=1}^{d}$, and $C_{{\normalfont 2}}(x)$ the solution with $D_2 = D_1 \cup \{(x_{d+1},\mathsf{y}_{d+1})\}$. Then $C_{{\normalfont 2}}(x) \leq C_{{\normalfont 1}}(x)$ for any $x \in \Omega$. 
+	\label{prop.decreasing}
+\end{proposition}
+
+\begin{proof}
+	Denote by $\mathds{P}1_1$ the problem solved with $D_1$ and decision variables $\begin{bmatrix} c & c_x \end{bmatrix}$. Similarly, $\mathds{P}1_2$ is associated with the dataset $D_2$ and the decision variables $\begin{bmatrix} c & c_x & c_z \end{bmatrix}$, where $c_z$ are due to the additional input in $D_2$. Since $D_2$ contains all members of $D_1$, the $\infty$-norm constraint of $\mathds{P}1_2$ can be recast as that of $\mathds{P}1_1$ and an additional constraint for $c_z$ and the new outputs. Let $\bar X := X \cup \{x\}$, $\bar c := \begin{bmatrix} c^\top c_x \end{bmatrix}^\top$ and $z := x_{d+1}$ be shorthand variables to ease notation. The complexity constraint of $\mathds{P}1_2$ is then
+	\begin{subequations}
+		\begin{align}
+            \begin{bmatrix}
+				\bar c \\
+				c_z
+			\end{bmatrix}^\top 
+			\begin{bmatrix}
+				K_{\bar X \bar X} & K_{\bar X z} \\
+				K_{z \bar X} & k(z,z)
+			\end{bmatrix}^{-1} 
+			\begin{bmatrix}
+				\bar c \\
+				c_z
+			\end{bmatrix} & \leq \Gamma^2 \\
+		    %
+			\overset{(i)}{\Leftrightarrow}
+			\bar c^\top K_{\bar X \bar X}^{-1} \bar c +
+			P_{\bar X}^{-2}(z) \, 
+			%\begin{bmatrix}
+			%	\bar c \\
+			%	c_z
+			%\end{bmatrix}^\top
+			%\begin{bmatrix}
+			%	K_{\bar X \bar X}^{-1} K_{\bar X z} \\
+			%	-1
+			%\end{bmatrix}
+			\left\|
+			\begin{bmatrix}
+				K_{\bar X \bar X}^{-1} K_{\bar X z} \\
+				-1
+			\end{bmatrix}
+			\begin{bmatrix}
+				\bar c \\
+				c_z
+			\end{bmatrix}\right\|_2^2
+			& \leq \Gamma^2 \\
+			%
+			\overset{(ii)}{\Leftrightarrow} \;
+			\begin{bmatrix}
+				c \\
+				c_x
+			\end{bmatrix}^\top 
+			\begin{bmatrix}
+				K_{XX} & K_{Xx} \\
+				K_{xX} & k(x,x)
+			\end{bmatrix}^{-1} 
+			\begin{bmatrix}
+				c \\
+				c_x
+			\end{bmatrix} \label{eq.tightenedConstr}%\\\notag
+			+
+			P_{\bar X}^{-2}(z) \, \left( \bar c^\top K_{\bar X \bar X}^{-1} K_{\bar X z} - c_z \right)^2 
+			&\leq \Gamma^2 
+		\end{align}
+		\label{eq.quadraticDecomp}
+	\end{subequations}
+	where the matrix identity found in Appendix~\ref{app.blockMatrixIdent} was used in $(i)$ and $P^2_{\bar X}(z) = k(z,z) - K_{z \bar X} K_{\bar X \bar X}^{-1} K_{\bar X z}$. In $(ii)$, the definitions of $\bar c$ and $\bar X$ were used. Thanks to $P_{\bar X}(z) \geq 0, \forall z$ and the quadratic term multiplying it, we conclude that for any choice of the decision variable $c_z$, \eqref{eq.tightenedConstr} is a tightened version of the complexity constraint of $\mathds{P}1_1$, which is \eqref{eq.P2constrA}. As a result, the maximum of $\mathds{P}1_2$ is lower or equal than that of $\mathds{P}1_1$. \QED 
+\end{proof}
+
+Let us take a closer look at the tightened constraint \eqref{eq.tightenedConstr}. The term $\bar c^\top K_{\bar X \bar X}^{-1} K_{\bar X z} =: s(z)$ represents an interpolating model passing through the output values $\bar c$, that is, $c$ and $c_x$ (see e.g. the discussion in Section~3.1 of \cite{maddalena2020deterministic}). If the difference $s(z) - c_z$ can be made small, then the tightening will also be reduced, whereas it will be significant if the difference is large. The result is of course dictated by the $\infty$-norm constraint, since $c_z$ cannot be more than $\bar \delta$ away from all the outputs $\mathsf{y}$ available at $z$. Therefore, a new datum will cause significant shrinkage of the envelope at a point $z \in \Omega$ when the new output causes $s(z) - c_z$ to be large, which intuitively can be seen as a measure of gained information through the new sample. Finally, this process is weighted by the inverse of the power function $P_{\bar X}^{-2}(z)$, which does not depend on any output, but only on the input locations. This indicates the advantage of evenly-spaced samples over random or bulked ones on the overall bound width. Example~1 in Section~\ref{sec::Result} confirms this intuition.
+
+\begin{remark}
+	Recovering the ground-truth as shown in Figure~\ref{fig.riskBound} (right) requires the noise realizations to match $\bar \delta$ and $-\bar \delta$; it is thus necessary to have tight noise bounds for it to happen. On the other hand, Proposition~\ref{prop.decreasing} guarantees the decreasing uncertainty property regardless of how accurate $\bar \delta$ is. Although not explicitly stated, a completely analogous result holds for the lower part of the envelope $\text{B}(x)$.
+\end{remark}
+
+\section{A sub-optimal closed-form solution}
+
+The discussion in this subsection assumes that only one sample is present at each input location, i.e., $\mathsf{y}_i = y_i$ for $i=1,\dots,d $, so that $\mathsf{y}=y$.
+
+In order to alleviate the computational complexity of having to solve two optimization problems at each query point, closed-form expressions can be employed instead. These surrogates yield sub-optimal bounds around any pre-specified kernel model of the form $s(x) = \alpha^\top K_{Xx}$, for some $\alpha \in \mathbb{R}^d$. 
+\begin{proposition}
+	\label{prop:uniform}
+	Let $s(x)=\alpha^\top K_{Xx}$, for a given $\alpha \in \mathbb{R}^d$. Then, for any $x\in \Omega$, the ground-truth is bounded by $s(x) - S(x) \leq f^\star(x) \leq s(x) + S(x)$ with
+	\begin{empheq}[box={\mymathbox[colback=black!2,drop small lifted shadow, sharp corners]}]{equation}
+	%\begin{equation}
+		S(x) =  P_X(x) \, \sqrt{ \Gamma^2 + \tilde\Delta } + \bar{\delta} \, \onenorm{K_{XX}^{-1}K_{Xx}} + \, \vert \tilde{s}(x) - s(x) \vert
+		\label{eq.uniformBound2}
+	%\end{equation}
+	\end{empheq}
+	where $\tilde{s}(x) = y^\top K_{XX}^{-1} K_{Xx}$, and the constant $\tilde\Delta$ is the minimum of the unconstrained convex problem $\min_{\nu \in \mathbb{R}^d} \left\{ \frac{1}{4}\nu^\top K_{XX}\nu + \nu^\top y + \bar{\delta} \onenorm{\nu}\right\}$.
+\end{proposition}
+\begin{proof}
+	See Appendix~\ref{app.lemproof}.
+\end{proof}
+
+The map $\tilde{s}(x) = y^\top K_{XX}^{-1} K_{Xx}$ is an interpolant for the available outputs $y$. Note also that none of the terms in \eqref{eq.uniformBound2} depend on the model weights $\alpha$ with the exception of the last term $|\tilde s(x) - s(x)|$. Therefore, the width $S(x)$ will be minimized when $s(x) = \tilde s(x) \implies \alpha = y^\top K_{XX}^{-1}$. Since such a model would severely overfit, a balance between smoothing the data and not diverging too much from $\tilde s(x)$ has to be found. In our previous work \cite{maddalena2020deterministic}, we have illustrated how kernel ridge regression and minimum norm models are good candidate techniques to accomplish this goal.
+
+By reformulating the optimal bounds, we uncover their relation with the suboptimal estimates given in Proposition~\ref{prop:uniform}. First, consider $\mathds{P}1$ and optimize over the decision variable $\delta = c - y$ rather than over $c$. Next, apply a quadratic decomposition identical to the one used in \eqref{eq.quadraticDecomp} to the complexity constraint \eqref{eq.P2constrA} and solve for $c_x$. After recalling that $\tilde{s}(x) = y^\top K_{XX}^{-1} K_{Xx}$ and $\rknorm{\tilde s}^2 = y^\top K_{XX}^{-1} y$, one obtains
+\begin{equation}
+	\begin{aligned}
+		c_x  \leq \;&  P(x) \sqrt{ \Gamma^2 - \rknorm{\tilde s}^2 - \delta^\top K_{XX}^{-1}\delta +2y^\top K_{XX}^{-1}\delta} +\tilde s(x) 
+		+ \delta^\top K_{XX}^{-1}K_{Xx}
+	\end{aligned}	
+	\label{eq.ineq}
+\end{equation}
+Instead of maximizing $c_x$, the right-hand side of \eqref{eq.ineq} can be directly considered as the objective function equivalently. As a result, we obtain 
+\[
+\begin{aligned}
+	\max_{\infnorm{\delta} \leq \bar \delta}\;\;& \tilde s(x) + P(x) \sqrt{ \Gamma^2 - \rknorm{\tilde s} - \delta^\top K_{XX}^{-1}\delta -2y^\top K_{XX}^{-1}\delta} + \delta^\top K_{XX}^{-1}K_{Xx} 
+\end{aligned}
+\]
+Now, relax the problem by allowing $\delta$ to attain different values inside and outside the square-root
+\begin{subequations}
+	\begin{align}\notag
+		\max_{\delta_1,\delta_2 \in \mathds{R}^{d}} &  \tilde s(x) + P(x) \sqrt{ \Gamma^2 - \rknorm{\tilde s}^2 - \delta_1^\top K_{XX}^{-1}\delta_1 +2y^\top K_{XX}^{-1}\delta_1} + \delta_2^\top K_{XX}^{-1}K_{Xx} \\ \label{eq.relaxedObjective}
+		\text{\normalfont subj. to} & \;\; \; \infnorm{\delta_1} \leq \bar \delta, \; \infnorm{\delta_2} \leq \bar \delta 
+	\end{align}
+\end{subequations}
+Note that the objective is separable and that $\tilde\Delta$ is the dual solution of 
+\begin{equation}
+	\max_{\delta_1 \in \mathbb{R}^d} \left\{ -\delta_1^\top K_{XX}^{-1}\delta_1 + 2y^\top K_{XX}^{-1}\delta_1 - \rknorm{\tilde s}^2 \right\}
+\end{equation}
+Also, $\max_{\delta_2 \in \mathbb{R}^d} \{ \delta_2^\top K_{XX}^{-1}K_{Xx} : \infnorm{\delta_2} \leq \bar\delta \} = \bar{\delta} \onenorm{K_{XX}^{-1}K_{Xx}}$ since these norms are duals of each other. Remember that the objective \eqref{eq.relaxedObjective} is a conservative upper bound for $f^\star(x)$, having $\tilde s(x)$ as the reference model. Given any smoother $s(x)$, the triangle inequality $|f(x) - s(x)| \leq |f(x) - \tilde s(x)| + |\tilde s(x) - s(x)|$ can be used to bound the distance between its predictions and the ground-truth values, arriving thus at the same expressions presented in Proposition~\ref{prop:uniform}.
+
+From \eqref{eq.ineq}, the noise variable $\delta$ is seen to increase the maximum in two distinct ways: through the inner product $\delta^\top K_{XX}^{-1}K_{Xx}$, and via a norm augmentation corresponding to $\tilde\Delta$. One source of conservativeness in Proposition~\ref{prop:uniform} is taking into account the worst-possible inner-product and norm increase jointly. Despite this fact, they yield competitive results for moderate noise-levels as shown numerically in Section~\ref{sec::Result}. We moreover note that in the noise-free scenario, \eqref{eq.ineq} and \eqref{eq.relaxedObjective} are the same, and Proposition~\ref{prop:uniform} simplifies to the classical bounds in the interpolation case (see for instance \cite{fasshauer2011positive}).
+
+\begin{remark}
+	The sub-optimal bounds presented in this subsection feature a nominal model at their center, which is desirable in many practical situations. In the optimal scenario, the minimum norm regressor $s^\star(x) = \alpha^{\star\top} K_{Xx}$, $\alpha^\star = \text{arg}\min_{\alpha \in \mathbb{R}^d} \{ \alpha^\top K_{XX} \alpha : \infnorm{K_{XX} \alpha - y} \leq \bar\delta \}$ can be used as a nominal model. This choice is guaranteed to lie completely within $\text{C}(x)$ and $\text{B}(x)$|although not necessarily in the middle|since the map $s^\star$ belongs to $\mathcal{H}$ and is a feasible solution for $\mathds{P}0$.
+\end{remark}

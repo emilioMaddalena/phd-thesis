@@ -27,21 +27,55 @@
 % \relpenalty=9999
 % \binoppenalty=9999
 
+%\usepackage{empheq}
+\usepackage{amsmath}
+\usepackage{empheq}
+\usepackage[most]{tcolorbox}
+\newtcbox{\mymathbox}[1][]{%
+	nobeforeafter, math upper, tcbox raise base,
+	enhanced, colframe=black!30!black,
+	colback=blue!20, boxrule=1pt,
+	#1}
+
+\usepackage{bm}
+
 
 \usepackage{xcolor}
 \definecolor{salmon}{rgb}{0.99,0.66,0.52}
 \definecolor{purple}{rgb}{0.647,0.537,0.757}
-\newcommand{\comment}[1]{{\color{purple}#1}}
+\newcommand{\mycomment}[1]{{\color{purple}#1}}
 \newcommand{\red}[1]{{\color{red}#1}}
 
+
+% ENVIRONMENTS
+
+\usepackage{amsthm}
+	
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{corollary}{Corollary}
 \newtheorem{lemma}{Lemma}
 \newtheorem{proposition}{Proposition}
-\newtheorem{definition}{Definition}
 \newtheorem{assumption}{Assumption}
 
-\newtheorem{proof}{Proof}
+%\newtheorem{my_proof}{\textit{\textbf{Proof}}}[]
+\newenvironment{my_proof}{\textbf{\textit{Proof:}}}{\hfill$\square$}
+
 \newtheorem{remark}{Remark}
 
+
+
+
+% COMMANDS
+
+\newcommand*{\QED}{\hfill\ensuremath{\square}}
+\newcommand{\rknorm}[1]{\left\| #1 \right\|_\mathcal{H}}
+\newcommand{\rkinner}[2]{\langle #1, #2 \rangle_\mathcal{H}}
+\newcommand{\infnorm}[1]{\left\| #1 \right\|_\infty}
+\newcommand{\onenorm}[1]{\left\| #1 \right\|_1}
+
+
+
+\usepackage{dsfont}
