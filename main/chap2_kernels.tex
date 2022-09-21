@@ -13,16 +13,13 @@ Information comes in many science fields in the form of data, samples, sometimes
 \mycomment{Statistical learning and approximation theory are not in opposition. Indeed, we can define the function of interest as the conditional \cite{temlyakov2008approximation}, perhaps talk about Belkin's work linking the two and advocating for using the approximation lenses.}
 
 \begin{definition}
-	\textbf{(Kernel)} Given an arbitrary non-empty set $\Omega$, a kernel $k$ is any symmetric function of the form
+	\textbf{(Kernel)} Given an arbitrary non-empty set $\mathcal{X}$, a kernel $k$ is any symmetric function of the form
 	\begin{equation}
-		k: \Omega \times \Omega \rightarrow \mathbb{R}
+		k: \mathcal{X} \times \mathcal{X} \rightarrow \mathbb{R}
 	\end{equation}
 \end{definition}
 
-\mycomment{Talk about kernels (can be seen as a library of non-linearities) and show examples of kernels. Say however, we'll restrict our attention to a specific class of them.}
-
 \begin{figure}[t]
-	\label{fig.pd_kernels}
 	\centering
 	\includegraphics[scale=0.4]{../images/chap2_kernel_li.pdf} \hspace{3pt}
 	\includegraphics[scale=0.4]{../images/chap2_kernel_se.pdf} \hspace{3pt}
@@ -30,26 +27,97 @@ Information comes in many science fields in the form of data, samples, sometimes
     \includegraphics[scale=0.4]{../images/chap2_kernel_ex.pdf} \hspace{3pt}
     \includegraphics[scale=0.4]{../images/chap2_kernel_sg.pdf} \hspace{3pt}
     \includegraphics[scale=0.4]{../images/chap2_kernel_wv.pdf} 
-	\caption{todo}
+	\caption{Examples of positive-definite kernels.}
+	\label{fig.pd_kernels}
 \end{figure}
 
 \begin{definition}
-	\textbf{(Kernel matrix)} Let $X = \{x_1,\dots,x_n\} \subset \Omega$ be a finite set of points. The $n \times n$ matrix $K_{XX}$ with entries $[K_{XX}]_{ij} = k(x_i,x_j)$ is called the kernel matrix of $k$ associated with $X$.
+	\textbf{(Kernel matrix)} Let $X = \{x_1,\dots,x_n\} \subset \mathcal{X}$ be a finite set of points. The $n \times n$ matrix $K_{XX}$ with entries $[K_{XX}]_{ij} = k(x_i,x_j)$ is called the kernel matrix of $k$ associated with $X$.
 \end{definition}
 
 
 \begin{definition}
 	\label{def.pd_kernel}
-	\textbf{(Positive-definite kernel)} A kernel function $k$ is said to be positive-definite if for any finite subset of points $X \subset \Omega$, the kernel matrix satisfies $K_{XX} \succeq 0$. If, in particular, $K_{XX} \succ 0$, then the kernel is strictly positive-definite.
+	\textbf{(Positive-definite kernel)} A kernel function $k$ is said to be positive-definite if for any finite subset of points $X \subset \mathcal{X}$, the kernel matrix satisfies $K_{XX} \succeq 0$. If, in particular, $K_{XX} \succ 0$, then the kernel is strictly positive-definite.
 \end{definition}
 
-Aside from the last definition, we underline that there exist broader classes of kernel functions such as the \textit{conditionally positive-definite} one \cite[§2.4]{scholkopf2002learning}. In this chapter however, our attention will be focused on the (positive-definite) PD set, from which some examples are shown in Figure~\ref{fig.pd_kernels}.
+Aside from the last definition, we underline that there exist broader classes of kernel functions such as the \textit{conditionally positive-definite} one \cite[§2.4]{scholkopf2002learning}\cite[§8]{wendland2004scattered}. In this chapter however, our attention will be focused on the (positive-definite) PD set, from which some examples are shown in Figure~\ref{fig.pd_kernels}. A more complete list of PD kernels and their mathematical properties can be found in Appendix~A.
 
+Recall that our original goal was to learn functions $f: \mathcal{X} \rightarrow \mathbb{R}$. With a kernel at hand, one can define functions with the same domain and co-domain simply by \textit{partially evaluating} $k$, in other words, fixing one of its arguments. As an example, for some $z \in \Omega$, we can define $k(z,\cdot): \mathcal{X} \rightarrow \mathbb{R}, x \mapsto k(z,x)$. Indeed, this was the approach taken to draw the plots in Figure~\ref{fig.pd_kernels}. Approximating the unknown ground-truth with a single partially evaluated kernel however appears to be overly restrictive. The next logical step is to consider a larger hypothesis space where our approximation is given by a linear combination of such kernel functions. It turns out every PD kernel already has a similar space associated with it, which is complete and endowed with enough structure to develop our uncertainty quantification theory. The following concepts are presented next to set up the stage for defining this special hypothesis space, the \textit{reproducing kernel Hilbert space}.
+
+\begin{proposition}
+	\label{thm.pd_kernels_feature_maps}
+	\textbf{(PD kernels have feature maps)} 
+	Let $k:\mathcal{X} \times \mathcal{X} \rightarrow \mathbb{R} $ be a positive-definite kernel. Then there exists a Hilbert space $\mathbb{H}$ endowed with an inner product $\langle \cdot,\cdot \rangle_\mathbb{H}$ and a mapping $\Phi :  \mathcal{X} \rightarrow \mathbb{H}$ such that 
+	\begin{equation}
+		k(x,x') = \langle \Phi(x),\Phi(x') \rangle_\mathbb{H}
+	\end{equation}
+	holds for any $x,x' \in \mathcal{X}$.
+\end{proposition}
+
+\begin{my_proof}
+	\cite[Theorem~4.16]{steinwart2008svm_book}, modulo the nomenclature difference.
+\end{my_proof}
+
+The mappings $\Phi$ above as well as the $\mathbb{H}$ spaces are in general not unique \citep[§4]{steinwart2008svm_book}, but there is one such space that enjoys an extra property that rules out some unexpected behavior from its members. This concept is introduced next.
+
+\begin{definition}
+	\label{def.rkhs}
+	\textbf{(Reproducing kernel Hilbert space)} 
+	Let $\mathcal{X} \neq \emptyset$ and $\mathbb{R}^\mathcal{X}$ the set of functions mapping $\mathcal{X}$ to $\mathbb{R}$. The subset $\mathcal{H} \subset \mathbb{R}^\mathcal{X}$ is called a reproducing kernel Hilbert space (RKHS) if it is a Hilbert space and if $\forall x \in \mathcal{X}$ the evaluation functionals
+	\begin{equation}
+		L_x: \mathcal{H} \rightarrow \mathbb{R}, \; L_x(f) \mapsto f(x), \; f\in \mathcal{H}
+	\end{equation}
+	are bounded.
+\end{definition}
+
+In order to see how useful such a property is, consider a sequence $\{f_n\}_{n=1}^\infty$ within a certain normed function space $\mathbb{H} \subset \mathbb{R}^\mathcal{X}$. Intuitively, one would expect that if $f_n \rightarrow f^\star$ in $\mathbb{H}$, then the values $f_n(x)$ attain by the sequence would converge to the values $f^\star(x)$. Yet, this is not always the case (see Example~\ref{ex.appendix_convergence} in Appendix~\ref{app.elements_analysis_algebra}). If, on the other hand, the evaluation functionals are bounded as in Definition~\ref{def.rkhs}, then the connection between convergence in the function space and the pointwise convergence of functions is guaranteed. Indeed, if $\{f_n\}_{n=1}^\infty$ and $f^\star$ are members of an RKHS $\mathcal{H}$, then $|f_n(x)-f^\star(x)| = | L_x(f_n) - L_x(f^\star)|  \leq \Vert L_x \Vert \rknorm{f_n - f^\star}$. $\Vert L_x \Vert $ is the operator norm of $L_x$, which is guaranteed by Definiton~\ref{def.rkhs} to be a finite number, and $\rknorm{f_n - f^\star} \rightarrow 0$. Therefore, function convergence in an RKHS implies pointwise convergence, matching our intuition.
+
+\begin{proposition}
+	\label{prop.unique_reprod_kernel}
+	\textbf{(Every RKHS has a unique PD reproducing kernel)} 
+	Let $\mathcal{H} \subset \mathbb{R}^\mathcal{X}$ be an RKHS. Then, the map $k: \mathcal{X} \times \mathcal{X} \rightarrow \mathbb{R}$, $k(x,x') := \langle L_x, L_{x'} \rangle_\mathcal{H}$ is a positive-definite kernel. Furthermore, $k$ is the unique map to satisfy the reproducing property, i.e., for any $x \in \mathcal{X}$, $k(x,\cdot) \in \rkhs$ and
+	\begin{equation}
+		\rkinner{f}{k(x,\cdot)} = L_x(f) = f(x)
+	\end{equation} 
+	for  all $f \in \rkhs$.
+\end{proposition}
+
+\begin{my_proof}
+	 \cite[Lemma~2]{berlinet2011reproducing} along with \citep[Theorem~4.20]{steinwart2008svm_book}.
+\end{my_proof}
+
+\begin{proposition}
+	\label{prop.unique_rkhs}
+	\textbf{(Every PD kernel has a unique RKHS)} 
+	Let $k: \mathcal{X} \times \mathcal{X} \rightarrow \mathbb{R}$ be a PD kernel. If $k$ is the reproducing kernel of an RKHS $\rkhs_A$ and of another RKHS $\rkhs_B$, then $\rkhs_A = \rkhs_B$.
+\end{proposition}
+
+\begin{my_proof}
+	\citep[Theorem~4.21]{steinwart2008svm_book}.
+\end{my_proof}
+
+Despite being part of their name, it is not clear from the definition above what the relationship between RKHSs and kernels are. To shed light on the matter, it helps to explicitly construct $\rkhs$ starting from a given $k$. Consider the so-called \textit{pre-Hilbert space}
+\begin{empheq}[box={\mymathbox[colback=black!2,drop small lifted shadow, sharp corners]}]{align}
+	\rkhs_0 :=& \; \text{span} \, \{ k(x,\cdot) \, | \, x \in \mathcal{X} \} \\
+ 	=&  \; \left\{ \sum_{i=1}^n c_i \, k(x_i,\cdot) \, | \, n \in \mathbb{N}, c_i \in \mathbb{R}, x_i \in \mathcal{X} \right\}
+\end{empheq}
+equipped with the real-valued map $\langle f,g\rangle_{\mathcal{H}_0} := \sum_{i=1}^n \sum_{j=1}^m a_i b_i k(x_i,x_j)$, which can be shown to be a valid inner-product, for members $f,g \in \mathcal{H}_0, f=\sum_{i=1}^n a_i \, k(x_i,\cdot), g=\sum_{j=1}^m b_j \, k(x_j,\cdot) $. This family $\mathcal{H}_0$ of functions is however not guaranteed to be complete, i.e., sequences $\{f_i\}_{i\in\mathbb{N}}$ of members might converge to functions outside $\mathcal{H}_0$. To transform it into a proper Hilbert space, one closes the space 
+\begin{empheq}[box={\mymathbox[colback=black!2,drop small lifted shadow, sharp corners]}]{equation}
+	\label{eq.rkhs_closure}
+	\mathcal{H} := \text{clos} \, \mathcal{H}_0
+\end{empheq}
+%\begin{equation}
+%	\mathcal{H} := \text{clos} \, \mathcal{H}_0
+%\end{equation}
+thus encompassing all limit points as measured by the norm induced through $\langle \cdot,\cdot \rangle_{\mathcal{H}_0}$. The function space $\mathcal{H}$ defined in \eqref{eq.rkhs_closure} can then be shown to be a valid RKHS\footnote{For a proof of this statement, the reader is referred to \cite[§3]{berlinet2011reproducing}, or to \cite[§4]{sejdinovic2012rkhs} for a more step-by-step pedagogical exposition.} according to Definition~\ref{def.rkhs}. Doing so is however not straightforward and requires showing that the elements included through the closure are indeed functions with well-defined point evaluations \cite[§4]{aronszajn1950theory}\cite[§10.2]{wendland2004scattered}, a step that is overlooked in simplified presentations.
+
+\mycomment{Discuss \cite{steinwart2006explicit_rbf_rkhs} and also \cite{steinwart2020_no_rkhs_cont_func} when talking about the expressiveness of H. Universal kernels \cite{micchelli2006universal}}
 
 \section{The uncertainty quantification problem}
 
 
-Herein we consider a positive-definite kernel $k:\Omega \times \Omega \rightarrow \mathds{R}$ along with its corresponding RKHS $\mathcal{H} \subset \mathds{R}^\Omega$. Our input space is taken to be a compact subset of the Euclidean space $\Omega \subset \mathbb{R}^n$. 
+Herein we consider a positive-definite kernel $k:\mathcal{X} \times \Omega \rightarrow \mathds{R}$ along with its corresponding RKHS $\mathcal{H} \subset \mathds{R}^\Omega$. Our input space is taken to be a compact subset of the Euclidean space $\Omega \subset \mathbb{R}^n$. 
 
 \begin{assumption}
 	\label{as:kernelRkhs}
