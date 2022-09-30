@@ -12,6 +12,9 @@ Information comes in many science fields in the form of data, samples, sometimes
 
 \mycomment{Statistical learning and approximation theory are not in opposition. Indeed, we can define the function of interest as the conditional \cite{temlyakov2008approximation}, perhaps talk about Belkin's work linking the two and advocating for using the approximation lenses.}
 
+\section{The formalism of kernels}
+\label{sec.formalism_of_kernels}
+
 \begin{definition}
 	\textbf{(Kernel)} Given an arbitrary non-empty set $\mathcal{X}$, a kernel $k$ is any symmetric function of the form
 	\begin{equation}
@@ -124,12 +127,12 @@ For a proof of this statement, the reader is referred to \cite[§3]{berlinet2011
 
 \begin{definition}
 	\textbf{(Universal kernel)}
-	Let $k$ be a continuous PD kernel and the set $\mathcal{X}$ be a compact metric space. Then $k$ is called universal if its RKHS $\rkhs \subset \mathbb{R}^\mathcal{X}$ is dense in the space of real-valued continuous functions $C(X) \subset \mathbb{R}^\mathcal{X}$ with respect to the maximum norm $\Vert \cdot \Vert_\infty$.
+	Let $k$ be a continuous PD kernel and the set $\mathcal{X}$ be a compact metric space. Then $k$ is called universal if its RKHS $\rkhs \subset \mathbb{R}^\mathcal{X}$ is dense in the space of real-valued continuous functions $C(\mathcal{X}) \subset \mathbb{R}^\mathcal{X}$ with respect to the maximum norm $\Vert \cdot \Vert_\infty$.
 \end{definition}
 
-From the above definition it follows that for any tolerable error $\epsilon > 0$, there exists an $f$ in the RKHS of a universal kernel such that the discrepancy bounded $\Vert f(x) - g(x) \Vert_\infty /leq \epsilon$.
+The above definition implies that for any target function $g \in C(\mathcal{X})$ and any tolerable error $\epsilon > 0$, there exists an $f$ in the RKHS of a universal kernel such that their mismatch is bounded $| f(x) - g(x) | \leq \epsilon, \forall x \in \mathcal{X}$.
 % REFINE
-Other model classes in machine learning are also known to be universal as defined above such as certain architectures of deep neural networks \citep{kidger2020universal}. All in all, the universality property is an indication of how rich a hypothesis space is, thus reassuring the user that little bias error will be introduced by his model class choice.
+All in all, the universality property is an indication of how rich a hypothesis space is, thus reassuring the user that little bias error will be introduced by his model class choice.
 
 \begin{proposition}
 	Let $\mathcal{X}$ be a compact subset of $\mathbb{R}^n$. The following are universal kernels
@@ -144,27 +147,88 @@ Other model classes in machine learning are also known to be universal as define
 	\cite[Corollary~4.58]{steinwart2008svm_book}.
 \end{my_proof}
 
-\mycomment{Discuss \cite{steinwart2006explicit_rbf_rkhs} and also \cite{steinwart2020_no_rkhs_cont_func} when talking about the expressiveness of H. Universal kernels \cite{micchelli2006universal}}
-
-\section{The uncertainty quantification problem}
 
 
-Herein we consider a positive-definite kernel $k:\mathcal{X} \times \Omega \rightarrow \mathds{R}$ along with its corresponding RKHS $\mathcal{H} \subset \mathds{R}^\Omega$. Our input space is taken to be a compact subset of the Euclidean space $\Omega \subset \mathbb{R}^n$. 
+\mycomment{Write a final remarks paragraph.}
+\mycomment{Other model classes in machine learning are also known to be universal as defined above such as certain architectures of deep neural networks \citep{kidger2020universal}. Talk about \cite{steinwart2020_no_rkhs_cont_func} i.e. no RKHS can contain C(X). The reader is referred to \cite{micchelli2006universal} for additional considerations on universal kernels.}
+
+\section{Crafting models}
+\label{sec.crafting_models}
+
+Suppose a dataset of the form $\{(x_i,y_i)\}_{i=1}^n$ is given. The $x_i \in \mathcal{X}, \forall i$ elements are referred to as \textit{inputs} and the $y_i \in \mathbb{R}, \forall i$ as \textit{outputs}. In this section, we will discuss exclusively the case where $\mathcal{X} \subset \mathbb{R}^m$ is a compact set, and the outputs are real-valued. For convenience, $\alpha \in \mathbb{R}^n$ will represent the vector of stacked real values $\alpha_i, i=1,\dots,n$. Similarly, $y \in \mathbb{R}^n$ is the vector form of the individual outputs $y_i,i=1,\dots,n$. Let $k_{Xx} : \mathcal{X} \rightarrow \mathbb{R}^n$ be the vector-valued function $x \mapsto \begin{bmatrix} k(x_1,x) & \dots & k(x_n,x)\end{bmatrix}$.
+
+As detailed in Section~\ref{sec.formalism_of_kernels}, weighted sums of partially evaluated kernel functions arise naturally in the context of kernel learning. In this section we shall see that, when given $\{(x_i,y_i)\}_{i=1}^n$, maps of the form
+\begin{equation}
+	f(x) = \sum_{i=1}^n \alpha_i k(x_i,x)
+\end{equation}
+evaluated precisely at the inputs $x_i$ are good candidates for acting as surrogate functions. Indeed, they are known to solve a number of optimal fitting problems given appropriate weights $\alpha$ as we explain next.
+
+\begin{align}
+		\bar{f} = \arginf_{f \in \mathcal{H}} & \quad \rknorm{f}^2 \\
+		\text{subj. to} & \quad f(x_i) = y_i, \, i = 1,\dots,n 
+\end{align}
+
+The theorem for the interpolating minimum-norm problem is proven in \cite[Theorem~3.5]{kanagawa2018gaussian}.
+
+Original representer theorem \cite{kimeldorf1971some}.
+
+\begin{theorem}
+	\textbf{(The representer theorem)}
+	Let $\{x_i,y_i\}_{i=1}^n$ be a collection of points such that $x_i \in \mathcal{X}$ for an arbitrary $\mathcal{X}$ and $y_i \in \mathbb{R}$. Let $k$ be a PD kernel and $\rkhs \subset \mathbb{R}^\mathcal{X}$ its RKHS. Consider an arbitrary function $c : (\mathcal{X} \times R^2)^n \rightarrow \mathbb{R} \cup \{\infty\}$ and a strictly monotonic increasing function $\Omega: [0,\infty) \rightarrow \mathbb{R}$. Then, if $f \in \rkhs$ is a minimizer of the variational problem
+	\begin{equation}
+		\label{eq.representer_theorem_general_loss}
+		\inf_{f\in \rkhs} c((x_1,y_1,f(x_1)),\dots,(x_n,y_n,f(x_n))) + \Omega(\Vert f \Vert_\rkhs)
+	\end{equation}
+	admits a representation of the form $f(x) = \sum_{i=1}^n \alpha_i x_i$, with $\alpha_i \in \mathbb{R}$. 
+\end{theorem}
+\begin{my_proof}
+	The proof is given in \cite{scholkopf2001generalized}.
+\end{my_proof}
+
+Specializing \eqref{eq.representer_theorem_general_loss} to a more usual loss function, we arrive at the well-known kernel ridge regression (KRR) problem, which admits a unique, closed-form solution.
+
+\begin{corollary}
+	Let $\{x_i,y_i\}_{i=1}^n$ be a collection of points such that $x_i \in \mathcal{X}$ for a compact $\mathcal{X} \subset \mathbb{R}^m$ and $y_i \in \mathbb{R}$. Let $k$ be a SPD kernel and $\rkhs \subset \mathbb{R}^\mathcal{X}$ its RKHS. Then, the variational problem
+	\begin{equation}
+		\inf_{f\in \rkhs} \; \frac{1}{n} \sum_{i=1}^n (y_i - f(x_i))^2 + \lambda \Vert f \Vert_\rkhs^2
+	\end{equation}
+	with $\lambda > 0$ admits a single minimizer, the function $f(x) = \sum_{i=1}^n \alpha_i x_i$ with $\alpha = (K_{XX} + n \lambda I)^{-1} y$. 
+\end{corollary}
+
+
+\section{Quantifying uncertainty}
+
+Besides being able to craft surrogate functions for our unknown ground-truth, it is also a common desideratum to understand how far away our predictions can be from the real phenomenon. We will start this section by formalizing the problem of bounding the ground-truth values that can be attained even at unseen locations given the information at hand. It is important to highlight that this process will not require a model. Next, alternative bounds are developed, this time around nominal models such as the ones presented in Section~\ref{sec.crafting_models}. Rather than limiting ourselves to the theoretical sphere, the discussion will also touch on the computational aspects involved in evaluating the derived expressions.
+
+\subsection{The setting and problem definition}
+
+The theory developed in this section will revolve around a specific class of kernels and input spaces as stated next.
 
 \begin{assumption}
-	\label{as:kernelRkhs}
-	The kernel function $k$ is strictly positive-definite and its RKHS $\mathcal{H}$ contains the ground-truth $f^\star$.
+	\label{as:kernel_spd_compact_X}
+	 $k$ is strictly positive-definite and defined on a compact $\mathcal{X} \subset \mathbb{R}^m$.
+\end{assumption}
+
+Regarding the unknown ground-truth function $f^\star$, the following are assumed.
+
+\begin{assumption}
+	\label{as:rkhs_contains_gt}
+	$f^\star$ is contained in the RKHS $\rkhs$ associated with $k$.
 \end{assumption}
 
 \begin{assumption}
 	An estimate $\Gamma \geq \rknorm{f^\star}$ for the ground-truth norm is known.
 \end{assumption}
 
-A dataset $\{(x_i,\mathsf{y}_i)\}_{i=1}^d$ is given to us, being composed of inputs $x_i \in \Omega$ and outputs $\mathsf{y}_i \in \mathbb{R}^{n_i}$, $\mathsf{y}_i = \begin{bmatrix}y_{i,1} & \dots & y_{i,n_i} \end{bmatrix}^\top$ that contain $n_i$ scalar samples collected at the same input location $x_i$. The dataset carries information about an underlying ground-truth map $f^\star \in \mathcal{H}$ according to
+
+The available data $\{(x_i,\mathsf{y}_i)\}_{i=1}^d$ is such that $x_i \in \mathcal{X}$ and $\mathsf{y}_i \in \mathbb{R}^{n_i}$, where the vector $\mathsf{y}_i = \begin{bmatrix}y_{i,1} & \dots & y_{i,n_i} \end{bmatrix}^\top$ contains $n_i$ scalar samples collected at the same input location $x_i$. The outputs are assumed to carry information about an underlying unknown ground-truth map $f^\star$ according to
 \begin{equation}
+	\label{eq.observational_model}
 	y_{i,j} = f^\star(x_i) + \delta_{i,j}
 \end{equation}
-where $\delta_{i,j}$ represents an additive measurement noise that is assumed to be uniformly bounded \textcolor{red}{as stated next.}
+where $\delta_{i,j}$ denotes an additive measurement noise. If only a single output is present at each input location, the observational model \eqref{eq.observational_model} simplifies to $y_{i} = f^\star(x_i) + \delta_{i}$.
+
+ that is assumed to be uniformly bounded \textcolor{red}{as stated next.}
 
 \begin{assumption}
 	\label{as:noisebound}
@@ -183,6 +247,8 @@ To upper bound the ground-truth values, we consider the following infinite-dimen
 where $f_X := \Lambda \begin{bmatrix} f(x_1) & \dots & f(x_d) \end{bmatrix}^\top$ is the vector of evaluations at the input locations, which are repeated whenever multiple outputs are available at a given input. This is accomplished through $\Lambda$ as defined in Appendix~\ref{app.thebigmatrix}. We highlight that the supremum is guaranteed to exist thanks to \eqref{eq.uniformBound}. Given a query location $x$, $\mathds{P}0$ yields the tightest
 %\footnote{\textcolor{red}{This adjective has to be understood in the sense that for any other possible candidate bound $\epsilon$ such that $\epsilon<F(x)$, there exists an $\tilde{f}$ compatible with our assumptions that violates this bound. This means, $\Vert \tilde{f} \Vert_\mathcal{H} \leq \Gamma$, $\Vert \tilde{f}_X-\mathsf{y} \Vert_\infty\leq \bar{\delta}$, and $\tilde{f}(x)>\epsilon$.}} 
 upper bound for $f(x)$ over all members $f \in \mathcal{H}$ of our hypothesis space that are consistent with our dataset, as well as our knowledge on the ground-truth complexity $\rknorm{f} \leq \Gamma$. Note how linking the function evaluations $f_X$ and the outputs $\mathsf{y}$ plays a role analogous to conditioning stochastic processes on past observations in statistical frameworks.
+
+\subsection{The optimal solution}
 
 Consider now the convex parametric quadratically-constrained linear program $\mathds{P}1$ 
 \begin{empheq}[box={\mymathbox[colback=black!2,drop small lifted shadow, sharp corners]}]{align}
@@ -282,79 +348,22 @@ Given our knowledge on the noise influence $\bar \delta$, it is natural to ask w
 
 Suppose now one has sampled $(x_i,\mathsf{y}_i)$ with $\mathsf{y}_i = \begin{bmatrix} y_{i,1} & y_{i,2} \end{bmatrix}^\top$, $y_{i,1} = f^\star(x_i) + \bar \delta$ and $y_{i,2} = f^\star(x_i) - \bar \delta$. Then there is no uncertainty whatsoever about $f^\star$ at $x_i$ since $f^\star(x_i) = (y_{i,1} + y_{i,2})/2$ is the only possible value attainable by the ground-truth. This illustrates that the possibility of having multiple outputs at the same location allows for the uncertainty interval to shrink past the $\bar \delta$ width, and eventually even reduce to a singleton as shown in Figure~\ref{fig.riskBound} (right). Notwithstanding, the addition of a new datum to an existing dataset|be it in the form of a new output at an already sampled location or a completely new input-output pair|can only reduce the uncertainty.
 
-\begin{proposition} {\normalfont \textbf{(Decreasing uncertainty):}}
-	Let $C_{{\normalfont 1}}(x)$ denote the solution of $\mathds{P}1$ with a dataset $D_1 = \{(x_i,\mathsf{y}_i)\}_{i=1}^{d}$, and $C_{{\normalfont 2}}(x)$ the solution with $D_2 = D_1 \cup \{(x_{d+1},\mathsf{y}_{d+1})\}$. Then $C_{{\normalfont 2}}(x) \leq C_{{\normalfont 1}}(x)$ for any $x \in \Omega$. 
+\begin{proposition} 
 	\label{prop.decreasing}
+	{\normalfont \textbf{(Decreasing uncertainty)}}
+	Let $C_{{\normalfont 1}}(x)$ denote the solution of $\mathds{P}1$ with a dataset $D_1 = \{(x_i,\mathsf{y}_i)\}_{i=1}^{d}$, and $C_{{\normalfont 2}}(x)$ the solution with $D_2 = D_1 \cup \{(x_{d+1},\mathsf{y}_{d+1})\}$. Then $C_{{\normalfont 2}}(x) \leq C_{{\normalfont 1}}(x)$ for any $x \in \Omega$. 
 \end{proposition}
+\begin{my_proof}
+	Given in Section~\ref{sec.selected_derivations}.
+\end{my_proof}
 
-\begin{proof}
-	Denote by $\mathds{P}1_1$ the problem solved with $D_1$ and decision variables $\begin{bmatrix} c & c_x \end{bmatrix}$. Similarly, $\mathds{P}1_2$ is associated with the dataset $D_2$ and the decision variables $\begin{bmatrix} c & c_x & c_z \end{bmatrix}$, where $c_z$ are due to the additional input in $D_2$. Since $D_2$ contains all members of $D_1$, the $\infty$-norm constraint of $\mathds{P}1_2$ can be recast as that of $\mathds{P}1_1$ and an additional constraint for $c_z$ and the new outputs. Let $\bar X := X \cup \{x\}$, $\bar c := \begin{bmatrix} c^\top c_x \end{bmatrix}^\top$ and $z := x_{d+1}$ be shorthand variables to ease notation. The complexity constraint of $\mathds{P}1_2$ is then
-	\begin{subequations}
-		\begin{align}
-            \begin{bmatrix}
-				\bar c \\
-				c_z
-			\end{bmatrix}^\top 
-			\begin{bmatrix}
-				K_{\bar X \bar X} & K_{\bar X z} \\
-				K_{z \bar X} & k(z,z)
-			\end{bmatrix}^{-1} 
-			\begin{bmatrix}
-				\bar c \\
-				c_z
-			\end{bmatrix} & \leq \Gamma^2 \\
-		    %
-			\overset{(i)}{\Leftrightarrow}
-			\bar c^\top K_{\bar X \bar X}^{-1} \bar c +
-			P_{\bar X}^{-2}(z) \, 
-			%\begin{bmatrix}
-			%	\bar c \\
-			%	c_z
-			%\end{bmatrix}^\top
-			%\begin{bmatrix}
-			%	K_{\bar X \bar X}^{-1} K_{\bar X z} \\
-			%	-1
-			%\end{bmatrix}
-			\left\|
-			\begin{bmatrix}
-				K_{\bar X \bar X}^{-1} K_{\bar X z} \\
-				-1
-			\end{bmatrix}
-			\begin{bmatrix}
-				\bar c \\
-				c_z
-			\end{bmatrix}\right\|_2^2
-			& \leq \Gamma^2 \\
-			%
-			\overset{(ii)}{\Leftrightarrow} \;
-			\begin{bmatrix}
-				c \\
-				c_x
-			\end{bmatrix}^\top 
-			\begin{bmatrix}
-				K_{XX} & K_{Xx} \\
-				K_{xX} & k(x,x)
-			\end{bmatrix}^{-1} 
-			\begin{bmatrix}
-				c \\
-				c_x
-			\end{bmatrix} \label{eq.tightenedConstr}%\\\notag
-			+
-			P_{\bar X}^{-2}(z) \, \left( \bar c^\top K_{\bar X \bar X}^{-1} K_{\bar X z} - c_z \right)^2 
-			&\leq \Gamma^2 
-		\end{align}
-		\label{eq.quadraticDecomp}
-	\end{subequations}
-	where the matrix identity found in Appendix~\ref{app.blockMatrixIdent} was used in $(i)$ and $P^2_{\bar X}(z) = k(z,z) - K_{z \bar X} K_{\bar X \bar X}^{-1} K_{\bar X z}$. In $(ii)$, the definitions of $\bar c$ and $\bar X$ were used. Thanks to $P_{\bar X}(z) \geq 0, \forall z$ and the quadratic term multiplying it, we conclude that for any choice of the decision variable $c_z$, \eqref{eq.tightenedConstr} is a tightened version of the complexity constraint of $\mathds{P}1_1$, which is \eqref{eq.P2constrA}. As a result, the maximum of $\mathds{P}1_2$ is lower or equal than that of $\mathds{P}1_1$. \QED 
-\end{proof}
-
-Let us take a closer look at the tightened constraint \eqref{eq.tightenedConstr}. The term $\bar c^\top K_{\bar X \bar X}^{-1} K_{\bar X z} =: s(z)$ represents an interpolating model passing through the output values $\bar c$, that is, $c$ and $c_x$ (see e.g. the discussion in Section~3.1 of \cite{maddalena2020deterministic}). If the difference $s(z) - c_z$ can be made small, then the tightening will also be reduced, whereas it will be significant if the difference is large. The result is of course dictated by the $\infty$-norm constraint, since $c_z$ cannot be more than $\bar \delta$ away from all the outputs $\mathsf{y}$ available at $z$. Therefore, a new datum will cause significant shrinkage of the envelope at a point $z \in \Omega$ when the new output causes $s(z) - c_z$ to be large, which intuitively can be seen as a measure of gained information through the new sample. Finally, this process is weighted by the inverse of the power function $P_{\bar X}^{-2}(z)$, which does not depend on any output, but only on the input locations. This indicates the advantage of evenly-spaced samples over random or bulked ones on the overall bound width. Example~1 in Section~\ref{sec::Result} confirms this intuition.
+%Let us take a closer look at the tightened constraint \eqref{eq.tightenedConstr}. The term $\bar c^\top K_{\bar X \bar X}^{-1} K_{\bar X z} =: s(z)$ represents an interpolating model passing through the output values $\bar c$, that is, $c$ and $c_x$ (see e.g. the discussion in Section~3.1 of \cite{maddalena2020deterministic}). If the difference $s(z) - c_z$ can be made small, then the tightening will also be reduced, whereas it will be significant if the difference is large. The result is of course dictated by the $\infty$-norm constraint, since $c_z$ cannot be more than $\bar \delta$ away from all the outputs $\mathsf{y}$ available at $z$. Therefore, a new datum will cause significant shrinkage of the envelope at a point $z \in \Omega$ when the new output causes $s(z) - c_z$ to be large, which intuitively can be seen as a measure of gained information through the new sample. Finally, this process is weighted by the inverse of the power function $P_{\bar X}^{-2}(z)$, which does not depend on any output, but only on the input locations. This indicates the advantage of evenly-spaced samples over random or bulked ones on the overall bound width. Example~1 in Section~\ref{sec::Result} confirms this intuition.
 
 \begin{remark}
 	Recovering the ground-truth as shown in Figure~\ref{fig.riskBound} (right) requires the noise realizations to match $\bar \delta$ and $-\bar \delta$; it is thus necessary to have tight noise bounds for it to happen. On the other hand, Proposition~\ref{prop.decreasing} guarantees the decreasing uncertainty property regardless of how accurate $\bar \delta$ is. Although not explicitly stated, a completely analogous result holds for the lower part of the envelope $\text{B}(x)$.
 \end{remark}
 
-\section{A sub-optimal closed-form solution}
+\subsection{A sub-optimal solution}
 
 The discussion in this subsection assumes that only one sample is present at each input location, i.e., $\mathsf{y}_i = y_i$ for $i=1,\dots,d $, so that $\mathsf{y}=y$.
 
@@ -408,3 +417,71 @@ From \eqref{eq.ineq}, the noise variable $\delta$ is seen to increase the maximu
 \begin{remark}
 	The sub-optimal bounds presented in this subsection feature a nominal model at their center, which is desirable in many practical situations. In the optimal scenario, the minimum norm regressor $s^\star(x) = \alpha^{\star\top} K_{Xx}$, $\alpha^\star = \text{arg}\min_{\alpha \in \mathbb{R}^d} \{ \alpha^\top K_{XX} \alpha : \infnorm{K_{XX} \alpha - y} \leq \bar\delta \}$ can be used as a nominal model. This choice is guaranteed to lie completely within $\text{C}(x)$ and $\text{B}(x)$|although not necessarily in the middle|since the map $s^\star$ belongs to $\mathcal{H}$ and is a feasible solution for $\mathds{P}0$.
 \end{remark}
+
+\section{Numerical examples}
+
+\section{Selected derivations}
+\label{sec.selected_derivations}
+
+Proof of Proposition~\ref{prop.decreasing}.
+
+\begin{my_proof}
+		Denote by $\mathds{P}1_1$ the problem solved with $D_1$ and decision variables $\begin{bmatrix} c & c_x \end{bmatrix}$. Similarly, $\mathds{P}1_2$ is associated with the dataset $D_2$ and the decision variables $\begin{bmatrix} c & c_x & c_z \end{bmatrix}$, where $c_z$ are due to the additional input in $D_2$. Since $D_2$ contains all members of $D_1$, the $\infty$-norm constraint of $\mathds{P}1_2$ can be recast as that of $\mathds{P}1_1$ and an additional constraint for $c_z$ and the new outputs. Let $\mathds{X}  := X \cup \{x\}$, $\bar c := \begin{bmatrix} c^\top c_x \end{bmatrix}^\top$ and $z := x_{d+1}$ be shorthand variables to ease notation. The complexity constraint of $\mathds{P}1_2$ is then
+		\begin{subequations}
+			\begin{align}
+				\begin{bmatrix}
+					\bar c \\
+					c_z
+				\end{bmatrix}^\top 
+				\begin{bmatrix}
+					K_{\mathds{X} \mathds{X} } & K_{\mathds{X}  z} \\
+					K_{z \mathds{X} } & k(z,z)
+				\end{bmatrix}^{-1} 
+				\begin{bmatrix}
+					\bar c \\
+					c_z
+				\end{bmatrix} & \leq \Gamma^2 \\
+				%
+				\overset{(i)}{\Leftrightarrow}
+				\bar c^\top K_{\mathds{X} \mathds{X} }^{-1} \bar c +
+				P_{\mathds{X} }^{-2}(z) \, 
+				%\begin{bmatrix}
+				%	\bar c \\
+				%	c_z
+				%\end{bmatrix}^\top
+				%\begin{bmatrix}
+				%	K_{\bar X \bar X}^{-1} K_{\bar X z} \\
+				%	-1
+				%\end{bmatrix}
+				\left\|
+				\begin{bmatrix}
+					K_{\mathds{X} \mathds{X} }^{-1} K_{\mathds{X} z} \\
+					-1
+				\end{bmatrix}
+				\begin{bmatrix}
+					\bar c \\
+					c_z
+				\end{bmatrix}\right\|_2^2
+				& \leq \Gamma^2 \\
+				%
+				\overset{(ii)}{\Leftrightarrow} \;
+				\begin{bmatrix}
+					c \\
+					c_x
+				\end{bmatrix}^\top 
+				\begin{bmatrix}
+					K_{XX} & K_{Xx} \\
+					K_{xX} & k(x,x)
+				\end{bmatrix}^{-1} 
+				\begin{bmatrix}
+					c \\
+					c_x
+				\end{bmatrix} \label{eq.tightenedConstr}%\\\notag
+				+
+				P_{\mathds{X} }^{-2}(z) \, \left( \bar c^\top K_{\mathds{X} \mathds{X} }^{-1} K_{\mathds{X} z} - c_z \right)^2 
+				&\leq \Gamma^2 
+			\end{align}
+			\label{eq.quadraticDecomp}
+		\end{subequations}
+		where the matrix identity found in Appendix~\ref{app.blockMatrixIdent} was used in $(i)$ and $P^2_{\mathds{X} }(z) = k(z,z) - K_{z \mathds{X} } K_{\mathds{X} \mathds{X} }^{-1} K_{\mathds{X} z}$. In $(ii)$, the definitions of $\bar c$ and $\mathds{X} $ were used. Thanks to $P_{\mathds{X} }(z) \geq 0, \forall z$ and the quadratic term multiplying it, we conclude that for any choice of the decision variable $c_z$, \eqref{eq.tightenedConstr} is a tightened version of the complexity constraint of $\mathds{P}1_1$, which is \eqref{eq.P2constrA}. As a result, the maximum of $\mathds{P}1_2$ is lower or equal than that of $\mathds{P}1_1$. 
+\end{my_proof}

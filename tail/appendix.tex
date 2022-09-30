@@ -128,7 +128,43 @@ The example below, taken from \cite[§1]{berlinet2011reproducing}, highlights an
 	and yet $p_n(1) = 1, \forall n$, i.e., $|p_n(x) - 0(x)| \nrightarrow 0$.
 \end{example}
 
-\mycomment{Discuss function spaces, convergence and pointwise convergence in them.}
+\begin{definition}
+	\textbf{(Span)}
+	Let $X$ be a vector space and $B \subseteq X$ be a subset of it. The \textit{span} of $B$ is defined as the set
+	\begin{equation}
+		\text{span}\,B = \left\{ \sum_{i=1}^n \lambda_i b_i \, | \, \lambda_i \in \mathbb{R}, b_i \in B, n \in \mathbb{N} \right\} 
+	\end{equation}
+\end{definition}
+
+\begin{definition}
+	\textbf{(Linear independence)}
+	Let $X$ be a vector space and $B \subseteq X$ be a subset of it. $B$ is said to be linearly independent if for every finite subset $\{b\}_{i=1}^n \subseteq B$, $\sum_{i=1}^n \lambda_i b_i = 0 \iff \lambda_1=\dots=\lambda_n = 0$.
+\end{definition}
+
+\begin{definition}
+	\textbf{(Hamel basis)}
+	Let $X$ be a vector space and $B \subseteq X$. $B$ is called a Hamel basis for $X$ if $B$ is linearly independent and $\text{span}\,B = X$.
+\end{definition}
+
+\begin{proposition}
+	Every vector space has a Hamel basis.
+	% \cite[Theorem~3.2.9]{searcoid2002elements}
+\end{proposition}
+
+\begin{proposition}
+	All Hamel bases of a vector space have the same cardinality.
+	% \cite[Theorem~3.2.13]{searcoid2002elements}
+\end{proposition}
+
+The concept of a Hamel basis is aligned with the more specific concept of a ``basis'' in finite-dimensional vector spaces. 
+
+\begin{definition}
+	\textbf{(Dimension of a vector space)}
+	The dimension of a vector space denoted $\text{dim}\,X$ is the cardinality of any Hamel basis $B$ of $X$. If any $B$ is not finite, $X$ is said to be infinite-dimensional.
+\end{definition}
+
+
+\mycomment{Perhaps explain the difference between SUP and MAX, INF and MIN. }
 
 
 
