@@ -326,6 +326,24 @@ This can be thought of as finding a map that interpolates the points $\{(x_i, c_
 	Finally, we establish the connection between $\mathds{P}0$ and $\mathds{P}1$. From the above arguments, an optimizer for $\mathds{P}0$ must lie in $\mathcal{H}^\Vert$. The members $f \in \mathcal{H}^\Vert$ have the form $f(z) = \alpha^\top K_{\mathds{X}z}$, being defined by the $\alpha$ weights. Due to the positive-definiteness of $k$, there exists a bijective map between outputs at the $\mathds{X}$ locations $f_{\mathds{X}} = \begin{bmatrix} f(x_1) & \dots & f(x_d) & f(x) \end{bmatrix}^\top$ and the weights $\alpha$, namely $\alpha = K_{\mathds{X}\mathds{X}}^{-1}f_{\mathds{X}}$. $K_{\mathds{X}\mathds{X}}$ denotes the kernel matrix associated with the set $\mathds{X} = X \cup \{x\}$. Consequently, optimizing over $f \in \mathcal{H}^\Vert$ is equivalent to optimizing over $\begin{bmatrix} f(x_1) & \dots & f(x_d) & f(x) \end{bmatrix}^\top =: \begin{bmatrix}c^\top & c_x\end{bmatrix}^\top$. The bounded norm condition can be recast as $\rknorm{f}^2 = \rkinner{f}{f} = \alpha^\top K_{\mathds{X}\mathds{X}} \alpha = \begin{bmatrix}c^\top & c_x\end{bmatrix} K_{\mathds{X}\mathds{X}}^{-1} \begin{bmatrix}c^\top & c_x\end{bmatrix}^\top$. The remaining constraint and the objective are straightforward. Noting that this reformulation is valid for any $x \in \Omega$ concludes the proof. 
 \end{my_proof}
 
+\begin{proposition} 
+	\label{prop.complex_constraint_always_active}
+	The inequality constraint \eqref{eq.P1constrA} is always active, i.e., let $(c^\star,c_x^\star)$ be an optimizer of $\mathds{P}1$, then $\begin{bmatrix}
+		c ^\star\\
+		c_x^\star
+	\end{bmatrix}^\top 
+	\begin{bmatrix}
+		K_{XX} & K_{Xx} \\
+		K_{xX} & k(x,x)
+	\end{bmatrix}^{-1} 
+	\begin{bmatrix}
+		c^\star \\
+		c_x^\star
+	\end{bmatrix} = \Gamma^2 $. 
+\end{proposition}
+\begin{my_proof}
+	\mycomment{Still need to figure out if the power function is positive everywhere outside the dataset...}
+\end{my_proof}
 
 Given our knowledge on the noise influence $\bar \delta$, it is natural to ask what the limits of the uncertainty quantification technique considered herein are. For example, is the width of the envelope $\text{C}(x) - \text{B}(x)$ restricted to a certain minimum value that cannot be reduced even with the addition of new data? From \eqref{eq.P2constrB}, it is clear that at any input location $x_i \in X$, $\text{C}(x_i)$ and $\text{B}(x_i)$ cannot be more than $2\bar \delta$ apart. In addition to that, the presence of the complexity constraint \eqref{eq.P2constrA} can bring the two values closer to each other. Depending on how restrictive this latter constraint is for a given $x_i$, the corresponding output $y_i$ might lie outside the interval between $\text{C}(x_i)$ and $\text{B}(x_i)$. In this case, the resulting width is considerably reduced as illustrated in Figure~\ref{fig.riskBound} (left).
 
