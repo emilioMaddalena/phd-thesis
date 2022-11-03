@@ -136,12 +136,108 @@ Comment: Stability certification
 \section{Simulation results}
 
 
+\subsection{Analysis and controller design}
+\label{sec:analysis}
+Parallelism is a key concept to increase the efficiency and power levels of electronic converters. Still, this design choice has to be followed by proper current/voltage balancing techniques to ensure that no stage is subjected to a higher electrical stress when compared to the others. 
+
+A schematic representation of a multicell step-down converter is shown in Fig.~\ref{fig:converter}, and its parameters can be found in Table~\ref{tab:param}. The topology features three arms that are connected to a coupled inductor, and an L-C output filter. All self inductances are assumed equal $L_1 = L_2 = L_3 = L_{s}$, and all mutual inductances have value $L_m$. The switches of each arm operate in a complementary fashion at a fixed frequency $f = \,$15 kHz, and with variable but constrained duty cycle $0 \leq d_i \leq 0.9, \, i=1,2,3$. Let the average voltage applied by the arms over one switching period be denoted by $v_i := d_i V_{in}, i=1,2,3$. In order to ease the analysis, we apply the Lunze transform $\Psi$ to all variables, decomposing the phase voltages and currents into differential and common mode components
+\begin{equation}
+	% \begin{bmatrix}
+	%     i_{dm1} \\ i_{dm2} \\ i_{cm}  
+	% \end{bmatrix} 
+	% := \Gamma 
+	% \begin{bmatrix}
+	%     i_{1} \\ i_{2} \\ i_{3}
+	% \end{bmatrix}
+	\begin{bmatrix}i_{dm1} & i_{dm2} & i_{cm}\end{bmatrix}' := \Psi \, \begin{bmatrix}i_{1} & i_{2} & i_{3}\end{bmatrix}' \\
+\end{equation}
+\begin{equation}
+	% \begin{bmatrix}
+	%     v_{dm1} \\ v_{dm2} \\ v_{cm}  
+	% \end{bmatrix} 
+	% := \Gamma 
+	% \begin{bmatrix}
+	%     v_{1} \\ v_{2} \\ v_{3}
+	% \end{bmatrix}
+	\begin{bmatrix}v_{dm1} & v_{dm2} & v_{cm}\end{bmatrix}' := \Psi \, \begin{bmatrix}v_{1} & v_{2} & v_{3}\end{bmatrix}' 
+\end{equation}
+where $\Psi = (1/3) \, [2 \, -1 \, -1; \, -1 \ \, 2 \, -1; \, 1 \ \, 1 \ \, 1]$.
+
+The control input is defined as $u := [v_{dm1} \; v_{dm2} \; v_{cm}]'$ and the continuous-time state vector, by appending the output voltage to the transformed currents $x := [i_{dm1} \; i_{dm2} \; i_{cm} \; v_{out}]'$. By using Kircchoff's circuit laws, a linear model of the form $\dot{x} = A_{ct} x + B_{ct} u$ can be derived with
+\begin{equation}
+	\small
+	A_{ct} = 
+	\begin{bmatrix}
+		\frac{-R}{L_s - L_m} & 0 & 0 & 0 \\
+		0 & \frac{-R}{L_s - L_m} & 0 & 0 \\
+		0 & 0 & \frac{-R}{L_s + 2L_m + 3L_f} & \frac{-1}{L_s + 2L_m + 3L_f} \\ 
+		0 & 0 & \frac{3}{C_o} & \frac{-1}{R_o C_o}
+	\end{bmatrix}
+\end{equation}
+\begin{equation}
+	\small
+	B_{ct} = 
+	\begin{bmatrix}
+		\frac{1}{L_s-L_m} & 0 & 0\\
+		0 & \frac{1}{L_s-L_m} & 0 \\
+		0 & 0 & \frac{1}{L_s + 2L_m + 3L_f} \\ 
+		0 & 0 & 0
+	\end{bmatrix}
+\end{equation}
+Finally, discretization at frequency $f$ is carried out using the zero-order hold method, yielding $x_{k+1} = A x_{k} + B u_{k}$.
+
+The control goal is to regulate the output voltage $v_{out}$ to 300$\,$V while maintaining the phase currents balanced at all times, which translates to driving the differential currents to zero. More specifically we have the following  fixed reference $x_{eq} = [0 \; 0 \; 16 \; 300]'$ with $u_{eq} = B^{\dagger}(I-A)x_{eq}$, where $B^\dagger$ is the pseudo-inverse of $B$. Moreover, the controller approximation procedure must not incur a steady-state error larger than 200$\,$mA for $i_{dm1}$ and $i_{dm2}$, and 5\% for the common mode component $i_{cm}$ and output voltage $v_{out}$. The chosen MPC cost function was
+\begin{equation}
+	J = \sum_{k=0}^{H-1} (||x_{k}-x_{eq}||_Q^2 + ||u_{k}-u_{eq}||_R^2) \, + \, ||x_{N}-x_{eq}||_P^2
+\end{equation}
+where $Q = \text{diag}(10, \, 10, \, 0.1, \, 0.1)$, $R = 0.1 \, I$, $P$ is the solution to the associated the discrete-time algebraic Riccati equation, and $H=10$. For all time instants, box state constraints were imposed $\begin{bmatrix}-5 & -5 & -10 & -20\end{bmatrix}' \leq x_{k} \leq \begin{bmatrix}5 & 5 & 30 & 400\end{bmatrix}^{\prime}$ and polyhedron constraints on the controls $H_u \, u_k \leq h_u$ that simply mapped the duty cycle saturation to the Lunze domain. Due to the polytopic input constraints, the system cannot be decomposed into three decoupled parts as the structure of matrices $A_{ct}$ and $B_{ct}$ suggest. Furthermore, the standard terminal set constraint was imposed on $x_H$, defined as the invariant set associated to the unconstrained infinite-time problem formulation.
+
+
 \begin{figure}[!t]
 	\centering
 	\includegraphics[width=0.7\linewidth]{../images/chap4_simres_multicelldcdc}
 	\caption{Photos of the AHU room depicting the air ducts (top), the supply and return water pipes (top and bottom), and the three-way valve servomotor (bottom).}
 	\label{fig.asd}
 \end{figure}
+
+
+\begin{table}[b]
+	\begin{center}
+		\caption{DC-DC converter parameters} \label{tab:param}
+		\begin{tabular}{cccccccc}
+			\hline 
+			$V_{in}$ & $L_{s}$ & $L_{m}$ & $R$ & $L_f$ & $C_o$ & $R_o$ & \\\hline
+			350$\,$V & 4$\,$mH & -2$\,$mH & 10$\,$m$\Omega$ & 270$\, \mu$H & 20$\, \mu$F & 6.25$\, \Omega$\\ \hline
+		\end{tabular}
+	\end{center}
+\end{table}
+
+
+\subsection{Learning the optimal controller}
+With the aid of the Multi-Parametric Toolbox (MPT) (\cite{herceg2013multi}), the optimal eMPC solution $\bm{\pi}(x)$ was calculated and consisted of 2'337 critical regions. By counting the number of parameters necessary to describe each halfspace and control gain, the memory requirement of this PWA function was found to be 518$\,$kB. In the previous calculation, a 4 byte representation was considered for both integers and floating point numbers.
+
+Next, 5'000 samples were randomly acquired from the eMPC controller using a uniform distribution. The first and second components of the sampled control moves had considerably smaller amplitudes compared to the third due to the structure of the Lunze transform $\Psi$. The dataset labels $\{\text{u}_i\}_{i=1}^{5000}$ had therefore to be scaled to ensure a similar learning of all control components. Moreover, instead of $\text{Proj}_{\mathbb{U}}(y_3)$, the last NN layer was simplified to $y_4 = \Psi \, \text{sat}(y_3)$ with saturation limits $0$ and $0.9 \, V_{in}$. This clearly guarantees control feasibility without the need of a second quadratic program. NN approximators were trained using \texttt{PyTorch} and the \texttt{OptNet} framework \citep{amos2017optnet}. A mean squared error loss function was minimized by employing the Adam algorithm, mini-batch stochastic gradient descent with batch size $50$, and $150$ epochs. The size $n_z$ of the pQP layer was varied from 1 to 7 and a total of 10 models were trained for each size; the lowest obtained losses are shown in Figure~\ref{fig:lossGraph}. On average, training a model required 42~minutes on a 3.1 GHz Intel Core i7 machine without GPU acceleration, and 23~minutes with a single NVIDIA Tesla T4 graphics card. The learned parameters were then exported to MATLAB in order to calculate the PWA solution of the pQP layer. 
+
+
+\begin{figure}[h]
+	\vspace{35pt}
+	\begin{center}
+		\includegraphics[scale=0.5]{../images/chap4_sim_res_loss_weight.pdf}    % The printed column width is 8.4 cm.
+		\caption{Neural network training loss as a function of the	pQP layer size, and storage requirements associated with their PWA representations.} 
+		\label{fig:niceSlices}
+	\end{center}
+\end{figure}
+
+\begin{figure}[h]
+	\vspace{35pt}
+	\begin{center}
+		\includegraphics[scale=0.65]{../images/chap4_simres_surfs.pdf}    % The printed column width is 8.4 cm.
+		\caption{Slices of the optimal eMPC controller $\bm{\pi}(x)$ and several PWA NN approximations $\hat{\bm{\pi}}(x)$. The left plots are associated to $v_{cm}$ and the right plots, to $v_{dm1}$.} 
+		\label{fig:niceSlices}
+	\end{center}
+\end{figure}
+
+An increase in the $n_z$ size clearly expands the representation capabilities of the neural network. This however does not always translate to a decrease in the final loss since the training process is affected by the weights initialization among other factors. Although not monotonic, we see a decrease of the overall training loss in Figure~\ref{fig:lossGraph} as $n_z$ grows. In order to validate the models, the start-up response of the converter was analyzed under all 7 different approximate controllers, and only the two largest ones ($n_z=$~6 and $n_z=$~7) met the target specifications given in Section~\ref{sec:analysis}. We refer to these two solutions as the \textit{viable learned controllers}. Slices of their control surfaces are shown in Figure~\ref{fig:niceSlices}, and a phase portrait of the closed-loop system evolution over 50 steps starting from four initial conditions is depicted in Figure~\ref{fig:plot1}. A summary of the two viable learned controller features is presented in Table~\ref{tab:sec}, including the number of polytopic regions, the storage requirements, the worst-case computation time\footnote{Before proceeding to implementation, a further speed up would be possible through the methods listed in the Introduction.} and the steady state (SS) error for $i_{cm}$ and $v_{out}$ -- both clearly always equal. Even though four initial states were given, the systems always converged to the same points and, hence, only one SS error is reported. Plus, the storage numbers also take into account all the remaining layers parameters. Analyzing the obtained results we see that the approximations drastically reduced the storage requirements by 93.4\% and 96.7\% and sped up the average evaluation time by 83.7\% and 88.4\%, respectively for the $n_z=$~7 and $n_z=$~6 cases. The closed-loop trajectories with the proposed $\hat{\bm{\pi}}(x)$ remained reasonably close to the scenario with the optimal $\bm{\pi}(x)$, converging to nearby equilibrium points. In practice, steady-state errors could be completely removed by using the tools mentioned in Section~\ref{sec:deployment}.
 
 \section{Experimental results}
 
@@ -306,14 +402,15 @@ A standard backpropagation approach can be used to iteratively update the NN par
 
 In order to assess the complexity of the learned controller, its L2 layer was converted into a PWA function using the MPT toolbox. As can be seen from lower plots in Figure~\ref{fig:part}, the number of region was greatly reduced: from 70 in the original partition to 6 in the simplified one, a reduction of 91\%. The total memory required to store the control law parameters was reduced from 9.25~kB to 528~B. The latter quantities were calculated by counting the total number of constants needed to describe all the inequalities that compose the polytopes and the remaining NN layers, and assuming that each of them occupies 1 \textit{word} of space.
 
-\clearpage
+\pagebreak
 
-\begin{figure}
+\begin{figure}[p] 
+	\vspace*{25pt}
 	\centering
-	\includegraphics[width=0.65\linewidth]{../images/chap4_scope_ol} \\[5pt]
-	\includegraphics[width=0.65\linewidth]{../images/chap4_scope_cl1} \\[5pt]
+	\includegraphics[width=0.65\linewidth]{../images/chap4_scope_ol} \\[10pt]
+	\includegraphics[width=0.65\linewidth]{../images/chap4_scope_cl1} \\[10pt]
 	\includegraphics[width=0.65\linewidth]{../images/chap4_scope_cl2}
-	\caption{Photos of the AHU room depicting the air ducts (top), the supply and return water pipes (top and bottom), and the three-way valve servomotor (bottom).}
+	\caption{Open-loop start-up response (top), closed-loop start-up response (middle), and a close-up view of the closed-loop start-up response highlighting individual switching cycles and the controller interrupt service routine (ISR) execution time, approximately 27$\;\mu$s.}
 	\label{fig.asd}
 \end{figure}
 

@@ -2,18 +2,18 @@
 \chapter{Safely learning with kernels}
 \markboth{Learning with kernels}{Learning with kernels}
 
+At its core, learning refers to the process of \textit{gathering information} and using it to \textit{improve one's knowledge} about the subject or phenomenon under study. The standing assumption here is then clearly that a link is in place, tying information and phenomenon together even if such link is partially corrupted. Information typically comes in the form of data, samples, sometimes referred to as examples, and
+%In modern machine learning, people study a number of rather abstract subjects ranging from the traits that distinguish images of muffins and chihuahuas, to the link between passengers' features and their survival likelihood in case of a ship sinking event.  
+the mathematical formalism often used in modern machine learning to study the link between examples and the underlying phenomena is statistics. This choice is convenient because it can describe the possible non-determinism of outcomes through the concepts of distributions and samples; and because it provides us with plenty of tools to carry out learning, i.e., improve our knowledge about the phenomenon through the samples at hand. In this chapter, we will however adopt a different standpoint to study and tackle the problem of learning, which is, as we will later argue, more aligned with the ways control engineers are taught to see physical systems. This standpoint is the one offered by approximation theory.
+
 In this chapter, we will introduce the problem of learning from data and elucidate what approach will be taken to tackle it. Next, novel uncertainty quantification results will be presented concerning the point-evaluations of an  unknown ground-truth. Finally, some examples are given to illustrate the general use of the theory.
-
-\section{The problem of learning}
-
-At its core, learning refers to the process of \textit{gathering information} and using it to \textit{improve one's knowledge} about the subject or phenomenon under study. The standing assumption here is then clearly that a link is in place, tying information and phenomenon together, even if such link is partially corrupted.
-
-Information comes in many science fields in the form of data, samples, sometimes referred to as examples. In modern machine learning, people study a number of rather abstract subjects ranging from the traits that distinguish images of muffins and chihuahuas, to the link between passengers' features and their survival likelihood in case of a ship sinking event.  The mathematical formalism often used to study the link between examples and these phenomena is statistics. This choice is convenient because it can describe the possible non-determinism of outcomes through the concepts of distributions and samples; and because it provides us with plenty of tools to carry out learning, i.e., improve our knowledge about the phenomenon through the samples at hand. In this chapter, we will however adopt a different standpoint to study and tackle the problem of learning, which is, as we will later argue, more aligned with the ways control engineers are taught to see physical systems. This standpoint is the one offered by approximation theory.
 
 \mycomment{Statistical learning and approximation theory are not in opposition. Indeed, we can define the function of interest as the conditional \cite{temlyakov2008approximation}, perhaps talk about Belkin's work linking the two and advocating for using the approximation lenses.}
 
 \section{The formalism of kernels}
 \label{sec.formalism_of_kernels}
+
+Our goal in to learn maps of the form $f: \mathcal{X} \rightarrow \mathbb{R}$ and, to achieve that end, we will make extensive use of auxiliary functions called kernels.
 
 \begin{definition}
 	\textbf{(Kernel)} Given an arbitrary non-empty set $\mathcal{X}$, a kernel $k$ is any symmetric function of the form
@@ -22,39 +22,39 @@ Information comes in many science fields in the form of data, samples, sometimes
 	\end{equation}
 \end{definition}
 
-\begin{figure}[t]
-	\centering
-	\includegraphics[scale=0.4]{../images/chap2_kernel_li.pdf} \hspace{3pt}
-	\includegraphics[scale=0.4]{../images/chap2_kernel_se.pdf} \hspace{3pt}
-	\includegraphics[scale=0.4]{../images/chap2_kernel_rq.pdf} \\[3pt]
-    \includegraphics[scale=0.4]{../images/chap2_kernel_ex.pdf} \hspace{3pt}
-    \includegraphics[scale=0.4]{../images/chap2_kernel_sg.pdf} \hspace{3pt}
-    \includegraphics[scale=0.4]{../images/chap2_kernel_wv.pdf} 
-	\caption{Examples of positive-definite kernels.}
-	\label{fig.pd_kernels}
-\end{figure}
-
 \begin{definition}
 	\textbf{(Kernel matrix)} Let $X = \{x_1,\dots,x_n\} \subset \mathcal{X}$ be a finite set of points. The $n \times n$ matrix $K_{XX}$ with entries $[K_{XX}]_{ij} = k(x_i,x_j)$ is called the kernel matrix of $k$ associated with $X$.
 \end{definition}
-
 
 \begin{definition}
 	\label{def.pd_kernel}
 	\textbf{(Positive-definite kernel)} A kernel function $k$ is said to be positive-definite if for any finite subset of points $X \subset \mathcal{X}$, the kernel matrix satisfies $K_{XX} \succeq 0$. If, in particular, $K_{XX} \succ 0$, then the kernel is strictly positive-definite.
 \end{definition}
 
-Aside from the last definition, we underline that there exist broader classes of kernel functions such as the \textit{conditionally positive-definite} one \cite[§2.4]{scholkopf2002learning}\cite[§8]{wendland2004scattered}. In this chapter however, our attention will be focused on the positive-definite (PD) set, from which some examples are shown in Figure~\ref{fig.pd_kernels}. A more complete list of PD kernels and their mathematical properties can be found in Appendix~A.
+\begin{remark}
+	Aside from the last definition, we underline that there exist broader classes of kernel functions such as the \textit{conditionally positive-definite} one \cite[§2.4]{scholkopf2002learning}\cite[§8]{wendland2004scattered}. In this chapter however, our attention will be focused on the positive-definite (PD) set, from which some examples are shown in Figure~\ref{fig.pd_kernels}. A more complete list of PD kernels and their mathematical properties can be found in Appendix~A.
+\end{remark}
 
-Recall that our original goal was to learn functions $f: \mathcal{X} \rightarrow \mathbb{R}$. With a kernel at hand, one can define functions with the same domain and co-domain simply by \textit{partially evaluating} $k$, in other words, fixing one of its arguments: for some $z \in \mathcal{X}$, we can define $k(z,\cdot): \mathcal{X} \rightarrow \mathbb{R}, x \mapsto k(z,x)$. Indeed, this was the approach taken to draw the plots in Figure~\ref{fig.pd_kernels}. Approximating the unknown ground-truth with a single partially evaluated kernel however appears to be overly restrictive. The next logical step is to consider a larger hypothesis space where our approximation is given by a linear combination of such kernel functions. It turns out that every PD kernel already has a similar space associated with it, which is complete and endowed with enough structure to allow us to develop our uncertainty quantification theory. The following concepts are presented next to set up the stage for defining this special hypothesis space, the \textit{reproducing kernel Hilbert space}.
+In order to construct surrogate models for the unknown $f$ one could partially evaluate a given $k$ to match their domains and co-domains, in other words, fix one of its arguments so that $k(z,\cdot): \mathcal{X} \rightarrow \mathbb{R}, x \mapsto k(z,x)$ for some $z \in \mathcal{X}$. Indeed, this was the approach taken to draw the plots in Figure~\ref{fig.pd_kernels}. Approximating the unknown $f$ with a single partially evaluated kernel however appears to be overly restrictive. A sensible next step would be to consider linear combinations of such kernel functions. It turns out that every PD kernel has a function space associated with it that contains these linear combinations and is endowed with plenty of useful geometric structure. The following concepts are presented next to set up the stage for defining this special hypothesis space, the \textit{reproducing kernel Hilbert space}.
 
-\mycomment{Talk about feature maps, liftings and their importance.}
+\begin{figure}[t]
+	\centering
+	\includegraphics[scale=0.4]{../images/chap2_kernel_li.pdf} \hspace{3pt}
+	\includegraphics[scale=0.4]{../images/chap2_kernel_se.pdf} \hspace{3pt}
+	\includegraphics[scale=0.4]{../images/chap2_kernel_rq.pdf} \\[3pt]
+	\includegraphics[scale=0.4]{../images/chap2_kernel_ex.pdf} \hspace{3pt}
+	\includegraphics[scale=0.4]{../images/chap2_kernel_sg.pdf} \hspace{3pt}
+	\includegraphics[scale=0.4]{../images/chap2_kernel_wv.pdf} 
+	\caption{Examples of positive-definite kernels.}
+	\label{fig.pd_kernels}
+\end{figure}
 
 \begin{proposition}
 	\label{thm.pd_kernels_feature_maps}
 	\textbf{(PD kernels have feature maps)} 
 	Let $k:\mathcal{X} \times \mathcal{X} \rightarrow \mathbb{R} $ be a positive-definite kernel. Then there exists a Hilbert space $\mathbb{H}$ endowed with an inner product $\langle \cdot,\cdot \rangle_\mathbb{H}$ and a mapping $\Phi :  \mathcal{X} \rightarrow \mathbb{H}$ such that 
 	\begin{equation}
+		\label{eq.kernels_feat_maps}
 		k(x,x') = \langle \Phi(x),\Phi(x') \rangle_\mathbb{H}
 	\end{equation}
 	holds for any $x,x' \in \mathcal{X}$.
@@ -64,7 +64,9 @@ Recall that our original goal was to learn functions $f: \mathcal{X} \rightarrow
 	\cite[Theorem~4.16]{steinwart2008svm_book}, modulo the nomenclature difference.
 \end{my_proof}
 
-The mappings $\Phi$ above as well as the $\mathbb{H}$ spaces are in general not unique \citep[§4]{steinwart2008svm_book}, but there is one such space that enjoys an extra property that rules out some unexpected behavior from its members. This concept is introduced next.
+Feature maps $\Phi$ are central in machine learning, allowing one to represent the data $x$ he has in a more suitable format. At the same time, \eqref{eq.kernels_feat_maps} unveils another aspect of a kernel evaluation $k(x,x')$: it returns the inner-product value of the transformed inputs $\Phi(x)$, $\Phi(x')$. Educational textbooks often interpret these inner-products as a similarity measure between $x$ and $x'$ \citep{scholkopf2002learning}.
+
+The mappings $\Phi$ above as well as the $\mathbb{H}$ spaces are in general not unique \citep[§4]{steinwart2008svm_book}, but there is one such space that enjoys an extra property that rules out some unexpected behavior from its members. This particular $\mathbb{H}$ is moreover not an arbitrary Hilbert space, but a Hilbert space of functions.
 
 \begin{definition}
 	\label{def.rkhs}
@@ -76,7 +78,7 @@ The mappings $\Phi$ above as well as the $\mathbb{H}$ spaces are in general not 
 	are bounded.
 \end{definition}
 
-In order to see how useful such a property is, consider a sequence $\{f_n\}_{n=1}^\infty$ within a certain Hilbert function space $\mathbb{H} \subset \mathbb{R}^\mathcal{X}$. Intuitively, one would expect that if $f_n \rightarrow f^\star$ in $\mathbb{H}$, then the values $f_n(x)$ attained by the sequence would converge to the values $f^\star(x)$. Yet, this is not always the case (see Example~\ref{ex.appendix_convergence} in Appendix~\ref{app.elements_analysis_algebra}). If, on the other hand, the evaluation functionals are bounded as in Definition~\ref{def.rkhs}, then the connection between convergence in the function space and the pointwise convergence of functions is guaranteed. Indeed, if $\{f_n\}_{n=1}^\infty$ and $f^\star$ are members of an RKHS $\mathcal{H}$, then $|f_n(x)-f^\star(x)| = | L_x(f_n) - L_x(f^\star)|  \leq \Vert L_x \Vert \rknorm{f_n - f^\star}$. $\Vert L_x \Vert $ is the operator norm of $L_x$, which is guaranteed by Definiton~\ref{def.rkhs} to be a finite number, and $\rknorm{f_n - f^\star} \rightarrow 0$. Therefore, function convergence in an RKHS implies pointwise convergence, matching our intuition.
+In order to see how useful such a property is, consider a sequence $\{f_n\}_{n=1}^\infty$ within a certain Hilbert function space $\mathbb{H} \subset \mathbb{R}^\mathcal{X}$. Intuitively, one would expect that if $f_n \rightarrow f^\star$ in $\mathbb{H}$, then the values $f_n(x)$ attained by the sequence would converge to the values $f^\star(x)$. Yet, this is not always the case (see Example~\ref{ex.appendix_convergence} in Appendix~\ref{app.elements_analysis_algebra}). If, on the other hand, the evaluation functionals are bounded as in Definition~\ref{def.rkhs}, then the connection between convergence in the function space and the pointwise convergence of functions is guaranteed. Indeed, if $\{f_n\}_{n=1}^\infty$ and $f^\star$ are members of an RKHS $\mathcal{H}$, then $|f_n(x)-f^\star(x)| = | L_x(f_n) - L_x(f^\star)|  \leq \Vert L_x \Vert \rknorm{f_n - f^\star}$, where $\Vert L_x \Vert $ is the operator norm of $L_x$ that is guaranteed by Definiton~\ref{def.rkhs} to be a finite number. As a result, if $\rknorm{f_n - f^\star} \rightarrow 0$, the right-hand side of the inequality goes to zero, and so does the pointwise difference $|f_n(x)-f^\star(x)|$. Therefore, function convergence in an RKHS implies pointwise convergence, matching our intuition.
 
 \begin{proposition}
 	\label{prop.unique_reprod_kernel}
@@ -84,6 +86,7 @@ In order to see how useful such a property is, consider a sequence $\{f_n\}_{n=1
 	Let $\mathcal{H} \subset \mathbb{R}^\mathcal{X}$ be an RKHS. Then, the map $k: \mathcal{X} \times \mathcal{X} \rightarrow \mathbb{R}$, $k(x,x') := \langle L_x, L_{x'} \rangle_\mathcal{H}$ is a positive-definite kernel. Furthermore, $k$ is the unique map to satisfy the reproducing property, i.e., for any $x \in \mathcal{X}$, $k(x,\cdot) \in \rkhs$ and
 	\begin{equation}
 		\rkinner{f}{k(x,\cdot)} = L_x(f) = f(x), \ \forall f \in \rkhs
+		\label{eq.reproducing_property}
 	\end{equation} 
 \end{proposition}
 
@@ -106,7 +109,7 @@ Despite being part of their name, it is not clear from the definition above what
 	\rkhs_0 :=& \; \text{span} \, \{ k(x,\cdot) \, | \, x \in \mathcal{X} \} \\
  	=&  \; \left\{ \sum_{i=1}^n c_i \, k(x_i,\cdot) \, | \, n \in \mathbb{N}, c_i \in \mathbb{R}, x_i \in \mathcal{X} \right\} \label{eq.pre_rkhs}
 \end{empheq}
-equipped with the real-valued map $\langle f,g\rangle_{\mathcal{H}_0} := \sum_{i=1}^n \sum_{j=1}^m a_i b_i k(x_i,x_j)$, which can be shown to be a valid inner-product, for members $f,g \in \mathcal{H}_0, f=\sum_{i=1}^n a_i \, k(x_i,\cdot), g=\sum_{j=1}^m b_j \, k(x_j,\cdot) $. This family $\mathcal{H}_0$ of functions is however not guaranteed to be complete, i.e., sequences $\{f_i\}_{i\in\mathbb{N}}$ of members might converge to functions outside $\mathcal{H}_0$. To transform it into a proper Hilbert space, one closes the space 
+equipped with the real-valued map $\langle f,g\rangle_{\mathcal{H}_0} := \sum_{i=1}^n \sum_{j=1}^m a_i b_i k(x_i,x_j)$ for members $f,g \in \mathcal{H}_0, f=\sum_{i=1}^n a_i \, k(x_i,\cdot), g=\sum_{j=1}^m b_j \, k(x_j,\cdot) $, which can be shown to be a valid inner-product. This family $\mathcal{H}_0$ of functions is however not guaranteed to be complete, i.e., sequences $\{f_i\}_{i\in\mathbb{N}}$ of members might converge to functions outside $\mathcal{H}_0$. To transform it into a proper Hilbert space, one closes the space 
 \begin{empheq}[box={\mymathbox[colback=black!2,drop small lifted shadow, sharp corners]}]{equation}
 	\label{eq.rkhs_closure}
 	\mathcal{H} := \text{clos} \, \mathcal{H}_0
@@ -120,25 +123,29 @@ Closing $\mathcal{H}_0$ requires defining an inner-product on the superset $\rkh
 %
 }. Finally, the function space $\mathcal{H}$ defined in \eqref{eq.rkhs_closure} can then be shown to be a valid RKHS\footnote{
 %
-For a proof of this statement, the reader is referred to \cite[§3]{berlinet2011reproducing}, or to \cite[§4]{sejdinovic2012rkhs} for a more step-by-step pedagogical exposition.
+For a proof of this statement, the reader is referred to \cite[§3]{berlinet2011reproducing} or to \cite[§4]{sejdinovic2012rkhs} for a more step-by-step pedagogical exposition.
 %
-} according to Definition~\ref{def.rkhs}, in fact, the only RKHS associated with $k$. We therefore understand that the members of $\rkhs$ are weighted sums of partially evaluated kernels as per \eqref{eq.pre_rkhs} along with their limit points. 
+} according to Definition~\ref{def.rkhs}. In fact, it is the \textit{only} one associated with $k$. We therefore understand that the members of $\rkhs$ are weighted sums of partially evaluated kernels as per \eqref{eq.pre_rkhs} along with their limit points. 
 %and requires showing that the elements included through the closure are indeed functions with well-defined point evaluations \cite[§4]{aronszajn1950theory}\cite[§10.2]{wendland2004scattered}, a step that is overlooked in simplified presentations.
+
+The questions of how expressive RKHSs can be still lingers on. To better examine the matter, consider the following measure of expressiveness.
 
 \begin{definition}
 	\textbf{(Universal kernel)}
+	\label{def.universal_kernel}
 	Let $k$ be a continuous PD kernel and the set $\mathcal{X}$ be a compact metric space. Then $k$ is called universal if its RKHS $\rkhs \subset \mathbb{R}^\mathcal{X}$ is dense in the space of real-valued continuous functions $C(\mathcal{X}) \subset \mathbb{R}^\mathcal{X}$ with respect to the maximum norm $\Vert \cdot \Vert_\infty$.
 \end{definition}
 
-The above definition implies that for any target function $g \in C(\mathcal{X})$ and any tolerable error $\epsilon > 0$, there exists an $f$ in the RKHS of a universal kernel such that their mismatch is bounded $| f(x) - g(x) | \leq \epsilon, \forall x \in \mathcal{X}$.
+The above definition guarantees that for any target function $g \in C(\mathcal{X})$ and any tolerable error $\epsilon > 0$, there exists an $f$ in the RKHS of a universal kernel such that their mismatch is bounded $| f(x) - g(x) | \leq \epsilon, \forall x \in \mathcal{X}$.
 % REFINE
-All in all, the universality property is an indication of how rich a hypothesis space is, thus reassuring the user that little bias error will be introduced by his model class choice.
+All in all, the universality property is an indication of how rich a hypothesis space is, thus reassuring the user that little bias error will be introduced by his choice of model class.
 
 \begin{proposition}
+	\label{prop.univ_kernels}
 	Let $\mathcal{X}$ be a compact subset of $\mathbb{R}^n$. The following are universal kernels
 	\begin{align}
 		&k(x,x') := \exp( \langle x, x' \rangle) \\
-		&k(x,x') := \exp\left( - \frac{\Vert x - x' \Vert^2_2}{2 \gamma^2} \right)
+		&k(x,x') := \exp\left( - \frac{\Vert x - x' \Vert^2_2}{2 \gamma^2} \right) \label{eq.squared_exponential}
 	\end{align}
 	where $\gamma >0$ and $\langle \cdot, \cdot \rangle$ is the usual inner-product on $\mathbb{R}^n$. 
 \end{proposition}
@@ -147,28 +154,55 @@ All in all, the universality property is an indication of how rich a hypothesis 
 	\cite[Corollary~4.58]{steinwart2008svm_book}.
 \end{my_proof}
 
-
-
-\mycomment{Write a final remarks paragraph.}
-\mycomment{Other model classes in machine learning are also known to be universal as defined above such as certain architectures of deep neural networks \citep{kidger2020universal}. Talk about \cite{steinwart2020_no_rkhs_cont_func} i.e. no RKHS can contain C(X). The reader is referred to \cite{micchelli2006universal} for additional considerations on universal kernels.}
+In contrast with Proposition~\ref{prop.univ_kernels}, some results on the restrictiveness of RKHSs can also be found in the literature. In \cite{steinwart2020_no_rkhs_cont_func} for example, the author shows that no RKHS can contain $C(X)$. On a looser note, some authors argue that members of the squared-exponential kernel \eqref{eq.squared_exponential} has an $\rkhs$ that is too smooth when compared to alternative hypothesis spaces that are also associated with the same kernel (see the discussion in \cite[§4]{kanagawa2018gaussian}). For a thorough exposition of universal kernels, the reader is referred to \cite{micchelli2006universal}. Lastly, we underline that other model classes in machine learning also enjoy the same universality properties that kernels do, notable certain architectures of deep neural networks \citep{kidger2020universal}.
 
 \section{Crafting models}
 \label{sec.crafting_models}
 
-Suppose a dataset of the form $\{(x_i,y_i)\}_{i=1}^n$ is given. The $x_i \in \mathcal{X}, \forall i$ elements are referred to as \textit{inputs} and the $y_i \in \mathbb{R}, \forall i$ as \textit{outputs}. In this section, we will discuss exclusively the case where $\mathcal{X} \subset \mathbb{R}^m$ is a compact set, and the outputs are real-valued. For convenience, $\alpha \in \mathbb{R}^n$ will represent the vector of stacked real values $\alpha_i, i=1,\dots,n$. Similarly, $y \in \mathbb{R}^n$ is the vector form of the individual outputs $y_i,i=1,\dots,n$. Let $k_{Xx} : \mathcal{X} \rightarrow \mathbb{R}^n$ be the vector-valued function $x \mapsto \begin{bmatrix} k(x_1,x) & \dots & k(x_n,x)\end{bmatrix}$.
+Suppose a dataset of the form $\{(x_i,y_i)\}_{i=1}^n$ is given. The $x_i \in \mathcal{X}, \forall i$ elements are referred to as \textit{inputs} and the $y_i \in \mathbb{R}, \forall i$ as \textit{outputs}. In this section, we will discuss exclusively the case where $\mathcal{X} \subset \mathbb{R}^m$ is a compact set, and the outputs are real-valued. The values $y_i$ are assumed to deliver information about the underlying ground-truth function $f^\star$ through the measurement model
+\begin{equation}
+	y_i = f^\star(x_i) + \epsilon_i, \quad i=1,\dots,n
+\end{equation}
+
+%For convenience, $\alpha \in \mathbb{R}^n$ will represent the vector of stacked real values $\alpha_i, i=1,\dots,n$. Similarly, $y \in \mathbb{R}^n$ is the vector form of the individual outputs $y_i,i=1,\dots,n$. Let $k_{Xx} : \mathcal{X} \rightarrow \mathbb{R}^n$ be the vector-valued function $x \mapsto \begin{bmatrix} k(x_1,x) & \dots & k(x_n,x)\end{bmatrix}$.
 
 As detailed in Section~\ref{sec.formalism_of_kernels}, weighted sums of partially evaluated kernel functions arise naturally in the context of kernel learning. In this section we shall see that, when given $\{(x_i,y_i)\}_{i=1}^n$, maps of the form
 \begin{equation}
 	f(x) = \sum_{i=1}^n \alpha_i k(x_i,x)
 \end{equation}
-evaluated precisely at the inputs $x_i$ are good candidates for acting as surrogate functions. Indeed, they are known to solve a number of optimal fitting problems given appropriate weights $\alpha$ as we explain next.
+partially evaluated at the inputs $x_i$ are good candidates for acting as surrogate functions for the ground-truth $f^\star$. Indeed, they are known to solve a number of optimal fitting problems given appropriate weights $\alpha$ as we explain next.
 
-\begin{align}
-		\bar{f} = \arginf_{f \in \mathcal{H}} & \quad \rknorm{f}^2 \\
-		\text{subj. to} & \quad f(x_i) = y_i, \, i = 1,\dots,n 
-\end{align}
+In the absence of measurement noise, i.e., when $\epsilon_i = 0$, the outputs $y_i$ perfectly represent $f^\star$. Consequently, data interpolation can be a sensible task to carry out, which could be carried out over $f \in \rkhs$ while minimizing the resulting model norm.
+%\begin{align}
+%		\bar{f} = \arginf_{f \in \mathcal{H}} & \quad \rknorm{f}^2 \\
+%		\text{subj. to} & \quad f(x_i) = y_i, \, i = 1,\dots,n 
+%\end{align}
+\begin{proposition}
+	\textbf{(Minimum-norm interpolation (MNI))}
+	Let $\{x_i,y_i\}_{i=1}^n$ be a collection of points such that $x_i \in \mathbb{R}^m$ and $y_i \in \mathbb{R}$. Let $k$ be a PD kernel and $\rkhs \subset \mathbb{R}^\mathcal{X}$ its RKHS. Then, the variational problem
+	\begin{equation}
+		\label{eq.min_norm_interp}
+			\bar{f} \in \arginf_{f \in \mathcal{H}} \left\{ \rknorm{f}^2 : f(x_i) = y_i, \, i = 1,\dots,n \right\}
+	\end{equation}
+	admits the unique solution $\bar f \in \rkhs$, $\bar f(x) =  \sum_{i=1}^n \alpha_i k(x_i,x)$, $\alpha = y^\top K_{XX}^{-1}$.
+\end{proposition}
+\begin{my_proof}
+	\cite[Theorem~3.5]{kanagawa2018gaussian}.
+\end{my_proof}
 
-The theorem for the interpolating minimum-norm problem is proven in \cite[Theorem~3.5]{kanagawa2018gaussian}.
+Some might think that models of the form \eqref{eq.min_norm_interp} would perform poorly in real-world scenarios as overfitting goes against established machine learning guidelines. Yet, some authors have recently advocated for such models, and interpolants in general, stating that they possess strong generalization capabilities (see e.g. \cite{belkin2018understand,belkin2019reconciling,beaglehole2022kernel}).
+
+To tackle the approximation problem in the presence of measurement noise, a compromise between fitting the data and rejecting uninformative fluctuations is sometimes desirable. One of the most standard tools used to achieve this balance is kernel ridge regression (KRR), in which the unconstrained problem
+
+\begin{proposition}
+	\textbf{(Kernel ridge regression (KRR))}
+	Let $\{x_i,y_i\}_{i=1}^n$ be a collection of points such that $x_i \in \mathcal{X}$ for a compact $\mathcal{X} \subset \mathbb{R}^m$ and $y_i \in \mathbb{R}$. Let $k$ be a SPD kernel and $\rkhs \subset \mathbb{R}^\mathcal{X}$ its RKHS. Then, the variational problem
+	\begin{equation}
+		\inf_{f\in \rkhs} \; \frac{1}{n} \sum_{i=1}^n (y_i - f(x_i))^2 + \lambda \Vert f \Vert_\rkhs^2
+	\end{equation}
+	with $\lambda > 0$ admits a single minimizer, the function $f(x) = \sum_{i=1}^n \alpha_i x_i$ with $\alpha = (K_{XX} + n \lambda I)^{-1} y$. 
+\end{proposition}
+
 
 Original representer theorem \cite{kimeldorf1971some}.
 
@@ -186,14 +220,6 @@ Original representer theorem \cite{kimeldorf1971some}.
 \end{my_proof}
 
 Specializing \eqref{eq.representer_theorem_general_loss} to a more usual loss function, we arrive at the well-known kernel ridge regression (KRR) problem, which admits a unique, closed-form solution.
-
-\begin{corollary}
-	Let $\{x_i,y_i\}_{i=1}^n$ be a collection of points such that $x_i \in \mathcal{X}$ for a compact $\mathcal{X} \subset \mathbb{R}^m$ and $y_i \in \mathbb{R}$. Let $k$ be a SPD kernel and $\rkhs \subset \mathbb{R}^\mathcal{X}$ its RKHS. Then, the variational problem
-	\begin{equation}
-		\inf_{f\in \rkhs} \; \frac{1}{n} \sum_{i=1}^n (y_i - f(x_i))^2 + \lambda \Vert f \Vert_\rkhs^2
-	\end{equation}
-	with $\lambda > 0$ admits a single minimizer, the function $f(x) = \sum_{i=1}^n \alpha_i x_i$ with $\alpha = (K_{XX} + n \lambda I)^{-1} y$. 
-\end{corollary}
 
 
 \section{Quantifying uncertainty}
@@ -438,68 +464,103 @@ From \eqref{eq.ineq}, the noise variable $\delta$ is seen to increase the maximu
 
 \section{Numerical examples}
 
-\section{Selected derivations}
+
+%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%
+% Appendices
+%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%
+
+\section{Conclusions and outlook}
+
+\section{Appendices}
+
+\subsection{Estimating kernel hyperparameters}
+
+Kernel functions typically feature a number of internal constants that need to be specified by the user, the so-called \textit{hyperparameters}. Although some theoretical properties remain insensitive to the final choice of hyperparameters\footnote{For instance, the squared-exponential kernel is universal (Definition~\ref{def.universal_kernel}) regardless of the its lengthscale value. On the other hand, it is known that if $k_\ell$ is a squared-exponential kernel with lengthscale $\ell$, then $\rkhs_{k_{\ell1}}$... \mycomment{cite Ingo's book}}, the numerical stability and real-world performance of kernel algorithms highly depend on the tuning of these numbers \citep{fasshauer2011positive}. 
+
+One popular approach to optimizing kernel hyperparameters is to consider the log marginal likelihood objective of a Gaussian process with Gaussian measurement noise, and apply a gradient-based numerical algorithm to it \citep[§5.4.1]{williams2006gaussian}. This amounts to solving a smooth, unconstrained non-convex optimization problem to local optimality.  Two appealing ... of this approach are the continuous nature of the search and the inherent regularization properties of the objective, known to combat overfitting. 
+
+Bayesian optimization (BayesOpt) is another widely adopted methodology to fine-tune hyperparameters against a pre-specified objective function \citep{snoek2012practical,shahriari2015taking}. BayesOpt operates on pairs of hyperparameters and their associated objective function values, and constructs a model for their unknown relationship. Next, a so-called \textit{acquisition function} based on the model is then employed to tell bad hyperparameters from promising ones \citep{wilson2018maximizing}. A new set of parameters is finally chosen to be experimented with and its performance is measured. This new piece of information is incorporated into the dataset and the process is repeated until some termination criterion is reached. Interestingly, the most popular model class used when reconstructing the aforementioned unknown relationship is Gaussian process, which is itself based on kernels whose own hyperparameters have to be set by the users.
+
+Lastly, we could also mention the different flavors of cross-validation (CV). The procedure builds an estimate of how suitable a set of hyperparameters are by evaluating the resulting model performance on unseen data. More specifically, it consists in shuffling and splitting the available data into batches, say $N$; making use of $N-1$ batches to define the model and the last one to assess its performance; the process is repeated $N$ times rotating the batches and yielding $N$ performance measures, which could be combined through averaging for instance. By following this algorithm, the most suitable hyperparameter value could be found from a predefined list of possible values. Note that, the log marginal likelihood itself could be a valid performance objective within CV \citep[§5.4.2]{williams2006gaussian}.
+
+\subsection{Estimating RKHS norms}
+
+Members $f \in \rkhs$ are either finite weighted sums of partially evaluated kernels $k(x,\cdot)$ or limits of sequences of such sums (see Section~\ref{sec.formalism_of_kernels}). Assume $f$ assumes a finite expansion, then
+\begin{align}
+	\Vert f \Vert_\rkhs^2 &= \langle f, f \rangle_\rkhs \label{eq.rkhs_norm_eq1} \\
+	&= \langle \sum_{i=1}^N \alpha_i k(x_i,\cdot), \sum_{i=1}^N \alpha_i k(x_i,\cdot) \rangle_\rkhs \label{eq.rkhs_norm_eq2} \\
+	&= \alpha^\top K_{XX} \alpha \label{eq.rkhs_norm_eq3}
+\end{align}
+where \eqref{eq.rkhs_norm_eq1} is the RKHS norm definition, \eqref{eq.rkhs_norm_eq2} is the inner-product definition, and \eqref{eq.rkhs_norm_eq3} follows from the inner-product linearity and from the reproducing property of kernels (see \eqref{eq.reproducing_property}). As a result, the norm $\Vert f \Vert_\rkhs$ can be exactly and easily computed as long as we have at hand the weights $\alpha$ that define $f$.
+
+Norms of functions composed of finite sums are exactly computable. Norms of functions in general can be approximated from below by samples of it and calculating quadratic forms. Norms under noisy samples. Numerical experiments. Thoughts.
+
+\subsection{Selected proofs}
+
 \label{sec.selected_derivations}
 
 Proof of Proposition~\ref{prop.decreasing}.
 
 \begin{my_proof}
-		Denote by $\mathds{P}1_1$ the problem solved with $D_1$ and decision variables $\begin{bmatrix} c & c_x \end{bmatrix}$. Similarly, $\mathds{P}1_2$ is associated with the dataset $D_2$ and the decision variables $\begin{bmatrix} c & c_x & c_z \end{bmatrix}$, where $c_z$ are due to the additional input in $D_2$. Since $D_2$ contains all members of $D_1$, the $\infty$-norm constraint of $\mathds{P}1_2$ can be recast as that of $\mathds{P}1_1$ and an additional constraint for $c_z$ and the new outputs. Let $\mathds{X}  := X \cup \{x\}$, $\bar c := \begin{bmatrix} c^\top c_x \end{bmatrix}^\top$ and $z := x_{d+1}$ be shorthand variables to ease notation. The complexity constraint of $\mathds{P}1_2$ is then
-		\begin{subequations}
-			\begin{align}
-				\begin{bmatrix}
-					\bar c \\
-					c_z
-				\end{bmatrix}^\top 
-				\begin{bmatrix}
-					K_{\mathds{X} \mathds{X} } & K_{\mathds{X}  z} \\
-					K_{z \mathds{X} } & k(z,z)
-				\end{bmatrix}^{-1} 
-				\begin{bmatrix}
-					\bar c \\
-					c_z
-				\end{bmatrix} & \leq \Gamma^2 \\
-				%
-				\overset{(i)}{\Leftrightarrow}
-				\bar c^\top K_{\mathds{X} \mathds{X} }^{-1} \bar c +
-				P_{\mathds{X} }^{-2}(z) \, 
-				%\begin{bmatrix}
-				%	\bar c \\
-				%	c_z
-				%\end{bmatrix}^\top
-				%\begin{bmatrix}
-				%	K_{\bar X \bar X}^{-1} K_{\bar X z} \\
-				%	-1
-				%\end{bmatrix}
-				\left\|
-				\begin{bmatrix}
-					K_{\mathds{X} \mathds{X} }^{-1} K_{\mathds{X} z} \\
-					-1
-				\end{bmatrix}
-				\begin{bmatrix}
-					\bar c \\
-					c_z
-				\end{bmatrix}\right\|_2^2
-				& \leq \Gamma^2 \\
-				%
-				\overset{(ii)}{\Leftrightarrow} \;
-				\begin{bmatrix}
-					c \\
-					c_x
-				\end{bmatrix}^\top 
-				\begin{bmatrix}
-					K_{XX} & K_{Xx} \\
-					K_{xX} & k(x,x)
-				\end{bmatrix}^{-1} 
-				\begin{bmatrix}
-					c \\
-					c_x
-				\end{bmatrix} \label{eq.tightenedConstr}%\\\notag
-				+
-				P_{\mathds{X} }^{-2}(z) \, \left( \bar c^\top K_{\mathds{X} \mathds{X} }^{-1} K_{\mathds{X} z} - c_z \right)^2 
-				&\leq \Gamma^2 
-			\end{align}
-			\label{eq.quadraticDecomp}
-		\end{subequations}
-		where the matrix identity found in Appendix~\ref{app.blockMatrixIdent} was used in $(i)$ and $P^2_{\mathds{X} }(z) = k(z,z) - K_{z \mathds{X} } K_{\mathds{X} \mathds{X} }^{-1} K_{\mathds{X} z}$. In $(ii)$, the definitions of $\bar c$ and $\mathds{X} $ were used. Thanks to $P_{\mathds{X} }(z) \geq 0, \forall z$ and the quadratic term multiplying it, we conclude that for any choice of the decision variable $c_z$, \eqref{eq.tightenedConstr} is a tightened version of the complexity constraint of $\mathds{P}1_1$, which is \eqref{eq.P2constrA}. As a result, the maximum of $\mathds{P}1_2$ is lower or equal than that of $\mathds{P}1_1$. 
+	Denote by $\mathds{P}1_1$ the problem solved with $D_1$ and decision variables $\begin{bmatrix} c & c_x \end{bmatrix}$. Similarly, $\mathds{P}1_2$ is associated with the dataset $D_2$ and the decision variables $\begin{bmatrix} c & c_x & c_z \end{bmatrix}$, where $c_z$ are due to the additional input in $D_2$. Since $D_2$ contains all members of $D_1$, the $\infty$-norm constraint of $\mathds{P}1_2$ can be recast as that of $\mathds{P}1_1$ and an additional constraint for $c_z$ and the new outputs. Let $\mathds{X}  := X \cup \{x\}$, $\bar c := \begin{bmatrix} c^\top c_x \end{bmatrix}^\top$ and $z := x_{d+1}$ be shorthand variables to ease notation. The complexity constraint of $\mathds{P}1_2$ is then
+	\begin{subequations}
+		\begin{align}
+			\begin{bmatrix}
+				\bar c \\
+				c_z
+			\end{bmatrix}^\top 
+			\begin{bmatrix}
+				K_{\mathds{X} \mathds{X} } & K_{\mathds{X}  z} \\
+				K_{z \mathds{X} } & k(z,z)
+			\end{bmatrix}^{-1} 
+			\begin{bmatrix}
+				\bar c \\
+				c_z
+			\end{bmatrix} & \leq \Gamma^2 \\
+			%
+			\overset{(i)}{\Leftrightarrow}
+			\bar c^\top K_{\mathds{X} \mathds{X} }^{-1} \bar c +
+			P_{\mathds{X} }^{-2}(z) \, 
+			%\begin{bmatrix}
+			%	\bar c \\
+			%	c_z
+			%\end{bmatrix}^\top
+			%\begin{bmatrix}
+			%	K_{\bar X \bar X}^{-1} K_{\bar X z} \\
+			%	-1
+			%\end{bmatrix}
+			\left\|
+			\begin{bmatrix}
+				K_{\mathds{X} \mathds{X} }^{-1} K_{\mathds{X} z} \\
+				-1
+			\end{bmatrix}
+			\begin{bmatrix}
+				\bar c \\
+				c_z
+			\end{bmatrix}\right\|_2^2
+			& \leq \Gamma^2 \\
+			%
+			\overset{(ii)}{\Leftrightarrow} \;
+			\begin{bmatrix}
+				c \\
+				c_x
+			\end{bmatrix}^\top 
+			\begin{bmatrix}
+				K_{XX} & K_{Xx} \\
+				K_{xX} & k(x,x)
+			\end{bmatrix}^{-1} 
+			\begin{bmatrix}
+				c \\
+				c_x
+			\end{bmatrix} \label{eq.tightenedConstr}%\\\notag
+			+
+			P_{\mathds{X} }^{-2}(z) \, \left( \bar c^\top K_{\mathds{X} \mathds{X} }^{-1} K_{\mathds{X} z} - c_z \right)^2 
+			&\leq \Gamma^2 
+		\end{align}
+		\label{eq.quadraticDecomp}
+	\end{subequations}
+	where the matrix identity found in Appendix~\ref{app.blockMatrixIdent} was used in $(i)$ and $P^2_{\mathds{X} }(z) = k(z,z) - K_{z \mathds{X} } K_{\mathds{X} \mathds{X} }^{-1} K_{\mathds{X} z}$. In $(ii)$, the definitions of $\bar c$ and $\mathds{X} $ were used. Thanks to $P_{\mathds{X} }(z) \geq 0, \forall z$ and the quadratic term multiplying it, we conclude that for any choice of the decision variable $c_z$, \eqref{eq.tightenedConstr} is a tightened version of the complexity constraint of $\mathds{P}1_1$, which is \eqref{eq.P2constrA}. As a result, the maximum of $\mathds{P}1_2$ is lower or equal than that of $\mathds{P}1_1$. 
 \end{my_proof}
+
