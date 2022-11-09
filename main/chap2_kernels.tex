@@ -367,9 +367,6 @@ This can be thought of as finding a map that interpolates the points $\{(x_i, c_
 		c_x^\star
 	\end{bmatrix} = \Gamma^2 $. 
 \end{proposition}
-\begin{my_proof}
-	\mycomment{Still need to figure out if the power function is positive everywhere outside the dataset...}
-\end{my_proof}
 
 Given our knowledge on the noise influence $\bar \delta$, it is natural to ask what the limits of the uncertainty quantification technique considered herein are. For example, is the width of the envelope $\text{C}(x) - \text{B}(x)$ restricted to a certain minimum value that cannot be reduced even with the addition of new data? From \eqref{eq.P2constrB}, it is clear that at any input location $x_i \in X$, $\text{C}(x_i)$ and $\text{B}(x_i)$ cannot be more than $2\bar \delta$ apart. In addition to that, the presence of the complexity constraint \eqref{eq.P2constrA} can bring the two values closer to each other. Depending on how restrictive this latter constraint is for a given $x_i$, the corresponding output $y_i$ might lie outside the interval between $\text{C}(x_i)$ and $\text{B}(x_i)$. In this case, the resulting width is considerably reduced as illustrated in Figure~\ref{fig.riskBound} (left).
 
@@ -386,9 +383,6 @@ Given our knowledge on the noise influence $\bar \delta$, it is natural to ask w
 	{\normalfont \textbf{(Width smaller than the noise bound):}}
 	If $\exists \mathsf{y}_i$ such that $y_{i,j} > {\normalfont C}(x_i)$ or $y_{i,j} < \text{B}(x_i)$ for some $j$, then $\text{C}(x_i) - \text{B}(x_i) \leq \bar \delta$.
 \end{proposition}
-\begin{my_proof}
-	Follows from $\text{C}(x_i) \geq \text{B}(x_i)$, $\text{C}(x_i) \leq y_{i,j} + \bar \delta$ and $\text{B}(x_i) \geq y_{i,j} - \bar \delta$ for any $i=1,\dots,d$ and any $j=1,\dots,n_i$. 
-\end{my_proof} 
 
 Suppose now one has sampled $(x_i,\mathsf{y}_i)$ with $\mathsf{y}_i = \begin{bmatrix} y_{i,1} & y_{i,2} \end{bmatrix}^\top$, $y_{i,1} = f^\star(x_i) + \bar \delta$ and $y_{i,2} = f^\star(x_i) - \bar \delta$. Then there is no uncertainty whatsoever about $f^\star$ at $x_i$ since $f^\star(x_i) = (y_{i,1} + y_{i,2})/2$ is the only possible value attainable by the ground-truth. This illustrates that the possibility of having multiple outputs at the same location allows for the uncertainty interval to shrink past the $\bar \delta$ width, and eventually even reduce to a singleton as shown in Figure~\ref{fig.riskBound} (right). Notwithstanding, the addition of a new datum to an existing dataset|be it in the form of a new output at an already sampled location or a completely new input-output pair|can only reduce the uncertainty.
 
@@ -487,23 +481,73 @@ Lastly, we could also mention the different flavors of cross-validation (CV). Th
 
 \subsection{Estimating RKHS norms}
 
-Members $f \in \rkhs$ are either finite weighted sums of partially evaluated kernels $k(x,\cdot)$ or limits of sequences of such sums (see Section~\ref{sec.formalism_of_kernels}). Assume $f$ assumes a finite expansion, then
+Members $f \in \rkhs$ are either finite weighted sums of partially evaluated kernels $k(x,\cdot)$ or limits of sequences of such sums (see Section~\ref{sec.formalism_of_kernels}). Assume $f$ enjoys a finite expansion of $N$ terms, then
 \begin{align}
 	\Vert f \Vert_\rkhs^2 &= \langle f, f \rangle_\rkhs \label{eq.rkhs_norm_eq1} \\
-	&= \langle \sum_{i=1}^N \alpha_i k(x_i,\cdot), \sum_{i=1}^N \alpha_i k(x_i,\cdot) \rangle_\rkhs \label{eq.rkhs_norm_eq2} \\
+	&= \left\langle \sum_{i=1}^N \alpha_i k(x_i,\cdot), \sum_{i=1}^N \alpha_i k(x_i,\cdot) \right\rangle_\rkhs \label{eq.rkhs_norm_eq2} \\
 	&= \alpha^\top K_{XX} \alpha \label{eq.rkhs_norm_eq3}
 \end{align}
 where \eqref{eq.rkhs_norm_eq1} is the RKHS norm definition, \eqref{eq.rkhs_norm_eq2} is the inner-product definition, and \eqref{eq.rkhs_norm_eq3} follows from the inner-product linearity and from the reproducing property of kernels (see \eqref{eq.reproducing_property}). As a result, the norm $\Vert f \Vert_\rkhs$ can be exactly and easily computed as long as we have at hand the weights $\alpha$ that define $f$.
 
-Norms of functions composed of finite sums are exactly computable. Norms of functions in general can be approximated from below by samples of it and calculating quadratic forms. Norms under noisy samples. Numerical experiments. Thoughts.
+In practice, it is hard to imagine a situation where the coefficients $\alpha$ would be known for a given physical system. Suppose however that we have a dataset at hand $\{(x_i,f_{x_i})\}\}_{i=1}^n$, where $f_{x_i} = f(x_i)$. The inputs $x_i$ need to be pairwise-distinct. Assume that $k$ is SDP and consider the function $s_n(x) := \sum_{i=1}^n \alpha_i k(x_i,x)$, $\alpha = K_{XX}^{-1} f_X$, which reproduces our dataset at every input, i.e., $s_n(x_i) = f_{x_i}$. According to the well-known optimal recovery property \cite[§8.3]{iske2018approximation}, $s_n$ not only interpolates the dataset, but also attains a minimum RKHS norm while doing so and, moreover, $\Vert s_n \Vert_\rkhs \leq \Vert f \Vert_\rkhs$ for any number of samples $n$. In view of the quadratic form \eqref{eq.rkhs_norm_eq3}, it is evident that for any new pair $(x_{n+1},f_{x_{n+1}})$ added to the dataset, $\Vert s_{n+1} \Vert_\rkhs \geq \Vert s_n \Vert_\rkhs$ holds. One can finally show that if samples are acquired distributed enough to fill the domain\footnote{minimize the fill distance}, then $\Vert f \Vert_\rkhs$ is the least upper bound of the $\Vert s_n \Vert_\rkhs$ sequence and, from the monotone convergence theorem, $\Vert s_n \Vert_\rkhs \rightarrow \Vert f \Vert_\rkhs$ is guaranteed.
+
+The discussion above showed that the RKHS norm $\Vert f \Vert_\rkhs$ can indeed be estimated from below from samples $\{(x_i,f_{x_i})\}_{i=1}^n$. This is done by simply evaluating the norm of the interpolant for which we know the weights $\alpha$
+\begin{equation}
+\Vert s_n \Vert_\rkhs^2 = \alpha^\top K_{XX} \alpha = f_{X}^\top K_{XX}^{-1} f_{X}
+\end{equation}
+The more samples we have, the closer the quadratic form will be from the target value $\Vert f \Vert_\rkhs$. Consider the example below for observations on how the estimation process unfolds in a practical scenario.
+
+Let $k$ be the squared-exponential with lengthscale $\ell = 0.5$ $f$...
+
+Up to this point, only noiseless samples were consider. Suppose now the data come in the form $\{(x_i,y_i)\}_{i=1}^n$ with $x_i$ pairwise distinct and $y_i=f(x_i) + \delta_i$. Let the additive noise be bounded by some known value $\bar \delta \geq |\delta_i|$ for all $i$. Since we do not have access to the evaluations of $f$ anymore, $\Vert s_n \Vert_\rkhs$ cannot be computed. If we naively interpolate the data with the model $\tilde s_n(x) := \sum_{i=1}^n \alpha_i k(x_i,x)$, $\alpha = K_{XX}^{-1} y$, the resulting norm $\Vert \tilde s_n \Vert_\rkhs^2 = y^\top K_{XX}^{-1}y$ can be either larger or smaller than its noise-free counterpart. The mismatch between the two will depend on how each $\delta_i$ will disturb the samples, and its maximum effects can be exactly computed.
+
+\begin{proposition}
+	Let $\{(x_i,y_i)\}_{i=1}^n$ be such that $x_i$ are pairwise distinct and $y_i = f(x_i) + \delta_i$ with $\bar \delta \geq |\delta_i|$ for all $i$. Let $s_n$ and $\tilde s_n$ be respectively the models interpolating the noise-free $f_X$ and the noisy $y$ values of $f$, i.e., $s_n(x) = \sum_{i=1}^n \alpha_i k(x_i,x)$, $\alpha = K_{XX}^{-1} f_X$ and $\tilde s_n(x) = \sum_{i=1}^n \alpha_i k(x_i,x)$, $\alpha = K_{XX}^{-1} y$. It then holds that
+	\begin{equation}
+		\nabla \leq \Vert s_n \Vert_\rkhs^2 - \Vert \tilde s_n \Vert_\rkhs^2 \leq \Delta
+	\end{equation}
+	where $\Delta$ and $\nabla$ denote respectively the maximum and minimum of $-\delta^\top K_{XX}^{-1} \delta + 2y^\top K_{XX}^{-1} \delta$ over $\delta$, subject to $|\delta| \leq \bar \delta$.
+	\label{prop.norms_mismatch}
+\end{proposition}
+
+Calculating $\Delta$ amounts to solving a convex optimization problem since it is the maximum of a strictly concave function, whereas $\nabla$ is not as simple.
 
 \subsection{Selected proofs}
-
 \label{sec.selected_derivations}
 
-Proof of Proposition~\ref{prop.decreasing}.
+\begin{my_proof}
+	\textbf{Proof of Proposition~\ref{prop.complex_constraint_always_active}:}
+	It follows from the objective being linear and only sensitive to $c_x$ and from reformulating \eqref{eq.P1constrA}. More concretely, we use the matrix inversion lemma and the definition of $P_X(x)$ to re-write the complexity constraint as
+	\begin{subequations}
+		\begin{align}
+			\begin{bmatrix}
+				c \\
+				c_x
+			\end{bmatrix}^\top 
+			\begin{bmatrix}
+				K_{XX} & K_{Xx} \\
+				K_{xX } & k(x,x)
+			\end{bmatrix}^{-1} 
+			\begin{bmatrix}
+				c \\
+				c_x
+			\end{bmatrix} & \leq \Gamma^2 
+		   \label{eq.appendix_complex_constr_terms1}
+		   \\
+			%
+			\Leftrightarrow \;
+			c^\top K^{-1}_{XX} c
+			+
+			P_{X}^{-2}(x) \, \left( c^\top K_{XX}^{-1} K_{Xx} - c_x \right)^2 
+			&\leq \Gamma^2 
+			\label{eq.appendix_complex_constr_terms}
+		\end{align}
+	\end{subequations}
+	Note that $P_X^{-2}(x) > 0$ since $P_X(x) > 0$ for any $x$ not in $X$ \citep{karvonen2022error}. As a result, we see that \eqref{eq.appendix_complex_constr_terms} depends quadratically on $c_x$. Therefore, for any feasible $(c, c_x)$ such that \eqref{eq.appendix_complex_constr_terms1} inactive, there exists $ \tilde c_x := c_x + \varepsilon, \varepsilon > 0$ such that $(c,\tilde c_x)$ attains a higher objective while satisfying the constraints.
+\end{my_proof}
 
 \begin{my_proof}
+	\textbf{Proof of Proposition~\ref{prop.decreasing}:}
 	Denote by $\mathds{P}1_1$ the problem solved with $D_1$ and decision variables $\begin{bmatrix} c & c_x \end{bmatrix}$. Similarly, $\mathds{P}1_2$ is associated with the dataset $D_2$ and the decision variables $\begin{bmatrix} c & c_x & c_z \end{bmatrix}$, where $c_z$ are due to the additional input in $D_2$. Since $D_2$ contains all members of $D_1$, the $\infty$-norm constraint of $\mathds{P}1_2$ can be recast as that of $\mathds{P}1_1$ and an additional constraint for $c_z$ and the new outputs. Let $\mathds{X}  := X \cup \{x\}$, $\bar c := \begin{bmatrix} c^\top c_x \end{bmatrix}^\top$ and $z := x_{d+1}$ be shorthand variables to ease notation. The complexity constraint of $\mathds{P}1_2$ is then
 	\begin{subequations}
 		\begin{align}
@@ -562,5 +606,15 @@ Proof of Proposition~\ref{prop.decreasing}.
 		\label{eq.quadraticDecomp}
 	\end{subequations}
 	where the matrix identity found in Appendix~\ref{app.blockMatrixIdent} was used in $(i)$ and $P^2_{\mathds{X} }(z) = k(z,z) - K_{z \mathds{X} } K_{\mathds{X} \mathds{X} }^{-1} K_{\mathds{X} z}$. In $(ii)$, the definitions of $\bar c$ and $\mathds{X} $ were used. Thanks to $P_{\mathds{X} }(z) \geq 0, \forall z$ and the quadratic term multiplying it, we conclude that for any choice of the decision variable $c_z$, \eqref{eq.tightenedConstr} is a tightened version of the complexity constraint of $\mathds{P}1_1$, which is \eqref{eq.P2constrA}. As a result, the maximum of $\mathds{P}1_2$ is lower or equal than that of $\mathds{P}1_1$. 
+\end{my_proof}
+
+\begin{my_proof}
+	\textbf{Proof of Proposition~\ref{prop.smallWidth}:}
+	Follows from $\text{C}(x_i) \geq \text{B}(x_i)$, $\text{C}(x_i) \leq y_{i,j} + \bar \delta$ and $\text{B}(x_i) \geq y_{i,j} - \bar \delta$ for any $i=1,\dots,d$ and any $j=1,\dots,n_i$. 
+\end{my_proof} 
+
+\begin{my_proof}
+	\textbf{Proof of Proposition~\ref{prop.norms_mismatch}:}
+	It follows from expanding $\Vert s_n \Vert_\rkhs^2$ and $\Vert \tilde s_n \Vert_\rkhs^2$.
 \end{my_proof}
 

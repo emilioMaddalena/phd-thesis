@@ -8,22 +8,24 @@
 \markboth{Abstract}{Abstract}
 \addcontentsline{toc}{chapter}{Abstract (English/Français/Deutsch)} % adds an entry to the table of contents
 % put your text here
-\lipsum[1-2]
+This thesis is situated at the crossroads between machine learning and control engineering. Our contributions are both theoretical, through proposing a new uncertainty quantification methodology in a kernelized context; and experimental, through investigating the suitability of certain machine learning techniques to integrate feedback loops in two challenging real-world control problems.
+
+The first part of this document is dedicated to deterministic kernel methods. First, the formalism is presented along with some widespread techniques to craft surrogates for an unknown ground-truth based on samples. Next, standing assumptions are made on the ground-truth complexity and on the data noise, allowing for a novel robust uncertainty quantification (UQ) theory to be developed. By means of this UQ framework, hard out-of-sample bounds on the ground-truth values can be computed through solving convex optimization problems. Closed-form outer approximations are also presented as a lightweight alternative to solving the mathematical programs. Several examples are given to illustrate how the control community could benefit from using this tool.
+
+In the second part of the thesis, statistical models in the form of Gaussian processes (GPs) are considered. These are used to carry out a building temperature control task of a hospital surgery center during regular use. The engineering aspects of the problem are detailed, followed by data acquisition, the model training procedure, and the developed predictive control formulation. Experimental results over a four-day uninterrupted period are presented and discussed, showing a gain in economical performance while ensuring proper temperature regulation. 
+
+Lastly, a specialized neural network architecture is proposed to learn linear model predictive controllers (MPC) from state-input pairs. The network features parametric quadratic programs (pQP) as an implicit non-linearity and is used to reduce the storage footprint and online computational load of MPC. Two examples in the domain of power electronics are given to showcase the effectiveness of the proposed scheme. The second of them consisted in enhancing the start-up response of a real step-down converter, deploying the learned control law on an 80$\,$MHz microcontroller and performing the computations in under $30\,$ microseconds.
 
 
-
-
-% German abstract
-\begin{otherlanguage}{german}
-\cleardoublepage
-\chapter*{Zusammenfassung}
-\markboth{Zusammenfassung}{Zusammenfassung}
-% put your text here
-\lipsum[1-2]
-\end{otherlanguage}
-
-
-
+%
+%% German abstract
+%\begin{otherlanguage}{german}
+%\cleardoublepage
+%\chapter*{Zusammenfassung}
+%\markboth{Zusammenfassung}{Zusammenfassung}
+%% put your text here
+%\lipsum[1-2]
+%\end{otherlanguage}
 
 % French abstract
 \begin{otherlanguage}{french}
