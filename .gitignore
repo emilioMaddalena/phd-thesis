@@ -1,5 +1,9 @@
 *.DS_Store
 
+# Ignored Python file
+
+*venv*
+
 # Ignore all LaTeX produced files
 
 *.aux

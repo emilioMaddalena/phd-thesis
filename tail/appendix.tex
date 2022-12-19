@@ -163,10 +163,24 @@ The concept of a Hamel basis is aligned with the more specific concept of a ``ba
 	The dimension of a vector space denoted $\text{dim}\,X$ is the cardinality of any Hamel basis $B$ of $X$. If any $B$ is not finite, $X$ is said to be infinite-dimensional.
 \end{definition}
 
+\begin{proposition}
+	Let $A \in \mathbb{R}^{d\times d}$ be an invertible matrix, $B \in \mathbb{R}^d$ and $c \in \mathbb{R}$. The following identity holds
+	\begin{equation}
+		\label{eq.matrix_inv_lemma}
+		\begin{bmatrix}
+			A & B \\
+			B^\top & c
+		\end{bmatrix}^{-1} 
+		= 	\begin{bmatrix}
+			A^{-1} + \frac{1}{d}A^{-1}BB^\top A^{-1} & - \frac{1}{d}A^{-1}B \\[3pt]
+			- \frac{1}{d}B^\top A^{-1} & \frac{1}{d}
+		\end{bmatrix}
+	\end{equation}
+	where $d = c - B^\top A^{-1} B$.
+\end{proposition}
+
 
 \mycomment{Perhaps explain the difference between SUP and MAX, INF and MIN. }
-
-
 
 
 
