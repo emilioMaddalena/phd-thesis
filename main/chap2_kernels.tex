@@ -262,7 +262,7 @@ The theory developed in this section will revolve around a specific class of ker
 \end{assumption}
 
 
-The available data $\{(x_i,\mathsf{y}_i)\}_{i=1}^d$ is such that $x_i \in \mathcal{X}$ and $\mathsf{y}_i \in \mathbb{R}^{n_i}$, where the vector $\mathsf{y}_i$ stacks $n_i$ scalar outputs $y_{i,1}, \dots, y_{i,n_i}$ observed at the same input location $x_i$. The outputs are assumed to carry information about an underlying unknown ground-truth map $f^\star$ according to
+The available data $\{(x_i,\mathsf{y}_i)\}_{i=1}^d$ is such that $x_i \in \mathcal{X}$ and $\mathsf{y}_i \in \mathbb{R}^{n_i}$, where the vector $\mathsf{y}_i$ stacks $n_i$ scalar outputs $y_{i,1}, \dots, y_{i,n_i}$ observed at the same input location $x_i$. The inputs $x_i$ are assumed to be pairwise-distinct without loss of generality. The outputs are assumed to carry information about an underlying unknown ground-truth map $f^\star$ according to
 \begin{equation}
 	\label{eq.observational_model}
 	y_{i,j} = f^\star(x_i) + \delta_{i,j}
@@ -301,6 +301,7 @@ where $f_X$ is the vector of evaluations at the input locations, which are repea
 %upper bound for $f(x)$ over all members $f \in \mathcal{H}$ of our hypothesis space that are consistent with our dataset, as well as our knowledge on the ground-truth complexity $\rknorm{f} \leq \Gamma$. Note how linking the function evaluations $f_X$ and the outputs $\mathsf{y}$ plays a role analogous to conditioning stochastic processes on past observations in statistical frameworks.
 
 \subsection{The optimal solution}
+\label{sec.the_optimal_solution}
 
 Consider now the convex parametric quadratically-constrained linear program $\mathds{P}1$ 
 \begin{empheq}[box={\mymathbox[colback=black!2,drop small lifted shadow, sharp corners]}]{align}
@@ -352,7 +353,7 @@ The two cases $\mathds{P}1$ and $\mathds{P}1'$ are distinguished due to the matr
 	The objective in $\mathds{P}0$ attains its supremum in $\mathcal{H}$ and ${\normalfont \text{F}}(x) = {\normalfont \text{C}}(x)$ for any $x \in \mathcal{X}$.
 \end{theorem}
 
-The proof revolves around showing that a solution to $\mathds{P}0$ necessarily lies in a finite-dimensional subspace of $\mathcal{H}$, in a ``representer theorem" spirit \citep{scholkopf2001generalized}. The attainment of the supremum is shown from topological aspects of the constraints in this subspace; and, finally, the match ${\normalfont \text{F}}(x) = {\normalfont \text{C}}(x)$ by re-evaluating the constraints in light of the solutions to $\mathds{P}0$ being finitely representable. 
+The proof involves showing that a solution to $\mathds{P}0$ necessarily lies in a finite-dimensional subspace of $\mathcal{H}$, in a ``representer theorem" spirit \citep{scholkopf2001generalized}. The attainment of the supremum is shown from topological aspects of the constraints in this subspace; and, finally, the match ${\normalfont \text{F}}(x) = {\normalfont \text{C}}(x)$ by re-evaluating the constraints in light of the solutions to $\mathds{P}0$ being finitely representable. 
 
 \begin{my_proof}
 	\textbf{Proof.}
@@ -491,33 +492,46 @@ By definition, weak duality \citep[§5]{bertsekas2009convex} ensures that any fe
 \begin{proposition}
 	\label{prop.strong_duality}
 	{\normalfont \textbf{(Strong duality):}}
-	If $\bar \delta > \delta_{i,j}, \forall i, j$ and $\Gamma > \rknorm{f^\star}$, then no duality gap exists, i.e., $\max \mathds{P}1 = \min \mathds{D}1$.
+	If $\bar \delta > |\delta_{i,j}|, \forall i, j$ and $\Gamma > \rknorm{f^\star}$, then no duality gap exists, i.e., $\max \mathds{P}1 = \min \mathds{D}1$.
 \end{proposition}
 
 
-\subsection{A closed-form sub-optimal solution}
+\subsection{Closed-form alternatives}
 
-The discussion in this subsection assumes that only one sample is present at each input location, i.e., $\mathsf{y}_i = y_i$ for $i=1,\dots,d $, so that $\mathsf{y}=y$.
+The discussion in this subsection assumes that only one sample is present at each input location, i.e., $\mathsf{y}_i = y_i$ for $i=1,\dots,d $, so that $\mathsf{y}=y$ and $\Lambda = I$.
 
-In order to alleviate the computational burden of having to solve two optimization problems at each query point, closed-form equations can be employed instead. These expressions yield sub-optimal bounds around pre-specified kernel models of the form $s(x) = \alpha^\top K_{Xx}$, for some $\alpha \in \mathbb{R}^d$. 
+Before addressing the general case, consider first the simplified scenario of having noiseless observations of the ground-truth. Closed-form prediction error bounds can then be established for MNI models, being based on the power function and on the  difference between our estimate $\Gamma$ and the MNI RKHS norm.
 
 \begin{proposition}
-	\label{prop:uniform}
-	Let Assumptions~\ref{as:kernel_spd_compact_X}-\ref{as.norm_bound} hold and denote by $\{(x_i,y_i)\}_{i=1}^d$ the available data. Let $s(x)=\alpha^\top K_{Xx}$ be a nominal model for some $\alpha \in \mathbb{R}^d$. Then, for any $x \in \mathcal{X}$, $\vert s(x) - f^\star(x) \vert \leq S(x)$ with
+	Let Assumptions~\ref{as:kernel_spd_compact_X}-\ref{as.norm_bound} hold with $\bar \delta = 0$. Let $s$ be the minimum-norm interpolant $s(x)=\alpha^\top K_{Xx}, \alpha = y^\top K_{XX}^{-1}$. Then, for any $x \in \mathcal{X}$
+	\label{prop.noise_free_bound}
+	\begin{empheq}[box={\mymathbox[colback=black!2,drop small lifted shadow, sharp corners]}]{equation}
+		\label{eq.noise_free_bounds}
+		\left|s(x) - f^\star(x)\right| \leq P_X(x) \sqrt{\Gamma^2 - \rknorm{s}^2}
+	\end{empheq}
+\end{proposition}
+
+With \eqref{eq.noise_free_bounds} in place, a more generalized inequality can be put forth, encompassing arbitrary noise levels and kernel models.
+%In order to alleviate the computational burden of having to solve two optimization problems at each query point, closed-form equations can be employed instead. These expressions yield sub-optimal bounds around pre-specified kernel models of the form $s(x) = \alpha^\top K_{Xx}$, for some $\alpha \in \mathbb{R}^d$. 
+
+\begin{proposition}
+	\label{prop:closed_form_bounds}
+	Let Assumptions~\ref{as:kernel_spd_compact_X}-\ref{as.norm_bound} hold with $\bar\delta \geq 0$. Let $s$ be a given nominal model $s(x)=\alpha^\top K_{Xx}, \alpha \in \mathbb{R}^d$. Then, for any $x \in \mathcal{X}$
 	\begin{empheq}[box={\mymathbox[colback=black!2,drop small lifted shadow, sharp corners]}]{equation}
 	%\begin{equation}
-		S(x) =  P_X(x) \, \sqrt{ \Gamma^2 + \tilde\Delta } + \bar{\delta} \, \onenorm{K_{XX}^{-1}K_{Xx}} + \, \vert \tilde{s}(x) - s(x) \vert
+		\vert s(x) - f^\star(x) \vert \leq  P_X(x) \, \sqrt{ \Gamma^2 + \Delta } + \bar{\delta} \, \onenorm{K_{XX}^{-1}K_{Xx}} + \, \vert \tilde{s}(x) - s(x) \vert
 		\label{eq.uniformBound2}
 	%\end{equation}
 	\end{empheq}
-	where $\tilde{s}(x) = y^\top K_{XX}^{-1} K_{Xx}$, and the constant $\tilde\Delta$ is the minimum of the unconstrained convex problem $\min_{\nu \in \mathbb{R}^d} \left\{ \frac{1}{4}\nu^\top K_{XX}\nu + \nu^\top y + \bar{\delta} \onenorm{\nu}\right\}$.
+	where $\tilde{s}(x) = y^\top K_{XX}^{-1} K_{Xx}$ and $\Delta = \min_{\nu \in \mathbb{R}^d} \left\{ \frac{1}{4}\nu^\top K_{XX}\nu + \nu^\top y + \bar{\delta} \onenorm{\nu}\right\}$.
 \end{proposition}
 
 \begin{remark}
-	We label the bounds provided by Proposition~\ref{prop:uniform} as sub-optimal for $s(s) + S(x) \geq \text{C}(X) \geq f^\star(x)$ and $s(s) - S(x) \leq \text{B}(x) \leq f^\star(x)$ at any $x \in \mathcal{X}$.
+	\textbf{(The sub-optimal bounds):}
+	Denote by $S(x)$ the right-hand side of the inequality \eqref{eq.uniformBound2}. One can then bound the ground-truth evaluations simply through $s(x) - S(x) \leq f^\star(x) \leq s(x) + S(x)$. We shall refer to them as ``the sub-optimal bounds'' since the inequalities will always be looser than $B(x) \leq f^\star(x) \leq C(x)$ obtained by solving the optimization problems of Section~\ref{sec.the_optimal_solution}.
 \end{remark}
 
-The map $\tilde{s}(x) = y^\top K_{XX}^{-1} K_{Xx}$ is an interpolant for the available outputs $y$. Note also that none of the terms in \eqref{eq.uniformBound2} depend on the model weights $\alpha$ with the exception of the last term $|\tilde s(x) - s(x)|$. Therefore, the width $S(x)$ will be minimized when $s(x) = \tilde s(x) \Leftrightarrow \alpha = y^\top K_{XX}^{-1}$. Such a model choice is however not always desirable and at times a balance between smoothing the data and not diverging too much from $\tilde s(x)$ has to be found. This trade-off is illustrated in Figure~\ref{fig.ex4} where the optimal bounds are compared against KRR sub-optimal ones built with the same RKHS norm estimate $\Gamma = 1.1 \rknorm{f^\star}$ and noise bound $\bar \delta = 1$. Three regularization constants were employed when designing the nominal models \eqref{eq.krr_model}. As can be seen from the plots, the sub-optimal bounds are always more conservative than the optimal ones and its conservativeness increases with $\lambda$.
+The map $\tilde{s}(x)$ is an interpolant for the available noisy outputs $y$. Note also that none of the terms in \eqref{eq.uniformBound2} depend on the model weights $\alpha$ with the exception of the last term $|\tilde s(x) - s(x)|$. Therefore, the width $S(x)$ will be minimized when $s(x) = \tilde s(x) \Leftrightarrow \alpha = y^\top K_{XX}^{-1}$. Such a model choice is however not always desirable and at times a balance between smoothing the data and not diverging too much from $\tilde s(x)$ has to be found. This trade-off is illustrated in Figure~\ref{fig.ex4} where the optimal bounds are compared against KRR sub-optimal ones built with the same RKHS norm estimate $\Gamma = 1.1 \rknorm{f^\star}$ and noise bound $\bar \delta = 1$. Three regularization constants were employed when designing the nominal models \eqref{eq.krr_model}. As can be seen from the plots, the sub-optimal bounds are always more conservative than the optimal ones and its conservativeness increases with $\lambda$.
 
 \begin{figure}[b]
 	\centering
@@ -528,9 +542,7 @@ The map $\tilde{s}(x) = y^\top K_{XX}^{-1} K_{Xx}$ is an interpolant for the ava
 	\label{fig.ex4}
 \end{figure}
 
-\FloatBarrier
-
-Let us inspect more closely the source of sub-optimality in Proposition~\ref{prop:uniform}. To do so, the optimal bounds problem \eqref{eq.P1case1} will be reformulated and relaxed, allowing for a closed-form solution to be found. 
+Let us inspect more closely the source of sub-optimality in Proposition~\ref{prop:closed_form_bounds}. To do so, the optimal bounds problem \eqref{eq.P1case1} will be reformulated and relaxed, allowing for a closed-form solution to be found. 
 
 Begin by employing a change of variables in $\mathds{P}1$ and optimizing over $(\delta, c_x), \delta := c - y$ rather than over $(c , c_x)$. Next, apply the matrix inversion lemma \eqref{eq.matrix_inv_lemma} to decompose the quadratic constraint \eqref{eq.P1constrA}, carry out the vector-matrix-vector multiplication and solve for $c_x$. This process leads to
 \begin{equation}
@@ -549,18 +561,288 @@ Now, relax the problem by allowing $\delta$ to attain different values inside an
 		\max_{\infnorm{\delta_1},\infnorm{\delta_1} \leq \bar\delta} P_X(x) \sqrt{ \Gamma^2 - \rknorm{\tilde s}^2 - \delta_1^\top K_{XX}^{-1}\delta_1 +2y^\top K_{XX}^{-1}\delta_1} + \tilde s(x) + \delta_2^\top K_{XX}^{-1}K_{Xx}  \label{eq.relaxedObjective}
 	\end{equation}
 The above objective is separable and the terms associated with $\delta_2$ evaluate to $\max_{\delta_2 \in \mathbb{R}^d} \{ \delta_2^\top K_{XX}^{-1}K_{Xx} : \Vert \delta_2 \Vert_\infty \leq \bar\delta \} = \bar{\delta} \, \Vert K_{XX}^{-1}K_{Xx} \Vert_1$ since these norms are duals of each other \citep[§A.1.6]{boyd2004convex}. Notice how what is inside the square-root is independent of the parameter $x$ and, therefore, only needs to be evaluated once for a fixed set of inputs $X$. Thanks to the strong duality of quadratic programming, we have that $\max_{\delta_1 \in \mathbb{R}^d} \left\{ -\delta_1^\top K_{XX}^{-1}\delta_1 + 2y^\top K_{XX}^{-1}\delta_1 - \rknorm{\tilde s}^2 : \Vert \bar\delta_1 \Vert_\infty \leq \bar\delta \right\}$  is equal to $\min_{\nu \in \mathbb{R}^d} \left\{ \frac{1}{4}\nu^\top K_{XX}\nu + \nu^\top y + \bar{\delta} \onenorm{\nu}\right\}$, which by definition is $\tilde \Delta$.
-Finally, recall that \eqref{eq.relaxedObjective} was a (conservative) upper bound for $f^\star(x)$. Given an arbitrary model $s(x)$, the triangle inequality $|f(x) - s(x)| \leq |f(x) - \tilde s(x)| + |\tilde s(x) - s(x)|$ can be used to bound the distance between its predictions and the ground-truth values, where $|f(x) - \tilde s(x)|$ comes from the derivations made in this paragraph. We have thus at the same expressions presented in Proposition~\ref{prop:uniform}.
+Finally, recall that \eqref{eq.relaxedObjective} was a (conservative) upper bound for $f^\star(x)$. Given an arbitrary model $s(x)$, the triangle inequality $|f(x) - s(x)| \leq |f(x) - \tilde s(x)| + |\tilde s(x) - s(x)|$ can be used to bound the distance between its predictions and the ground-truth values, where $|f(x) - \tilde s(x)|$ comes from the derivations made in this paragraph. We have thus at the same expressions presented in Proposition~\ref{prop:closed_form_bounds}.
+
+The proof of Proposition~\ref{prop:closed_form_bounds} presented in Section~\ref{sec.selected_derivations} follows a different, simpler argumentation. The derivation presented here however better highlights how the relaxed maximizaition \eqref{eq.relaxedObjective} takes into account the worst-possible inner-product $\delta_2^\top K_{XX}^{-1}K_{Xx}$ and norm term associated with $\delta_1$ jointly. Besides, Proposition~\ref{prop:closed_form_bounds} is also seen to strongly rely on the interpolant $\tilde s(x)$ as shown by the use of the triangle-inequality.  Despite this fact, we have experimentally achieved reasonable results when in moderate noise level scenarios.
 
 \begin{remark}
-	The proof of Proposition~\ref{prop:uniform} presented in Section~\ref{sec.selected_derivations} follows a different, simpler argumentation. The derivation presented here however better highlights how the relaxed maximizaition \eqref{eq.relaxedObjective} takes into account the worst-possible inner-product $\delta_2^\top K_{XX}^{-1}K_{Xx}$ and norm term associated with $\delta_1$ jointly. Besides, Proposition~\ref{prop:uniform} is also seen to strongly rely on the interpolant $\tilde s(x)$ as shown by the use of the triangle-inequality.  Despite this fact, we have experimentally achieved reasonable results when in moderate noise level scenarios.
+	The sub-optimal bounds given in Proposition~\ref{prop:closed_form_bounds} feature a nominal model at their center, which is desirable in situations. In the optimal scenario, the minimum norm regressor $s^\star(x) = \alpha^{\star\top} K_{Xx}$, $\alpha^\star = \text{arg}\min_{\alpha \in \mathbb{R}^d} \{ \alpha^\top K_{XX} \alpha : \infnorm{K_{XX} \alpha - y} \leq \bar\delta \}$ can be used as a nominal model. This choice is guaranteed to lie completely within $\text{C}(x)$ and $\text{B}(x)$, although not necessarily in the middle, since the map $s^\star$ belongs to $\mathcal{H}$ and is a feasible solution for $\mathds{P}0$ in \eqref{eq.infdimprob}.
 \end{remark}
 
+\section{Kernel predictive control}
+\label{sec.kpc}
+
+The theory developed so far revolved purely around function approximation. In this subsection we make use of it to go from data to safely controlling a dynamical system by means of kernelized models and uncertianty estimates. For convenience and due to the shifting from one domain to another, notation will be overloaded.
+
+Consider a discrete-time dynamical system of the form 
+\begin{equation}
+	\label{eq.dyn_sys}
+	x_{t+1} = f(x_t,u_t)	
+\end{equation}
+with time $t \in \mathbb{N}$, states $x_t \in \mathbb{R}^{n_x}$, inputs $u_t \in \mathbb{R}^{n_u}$, and an \textit{unknown}\footnote{If a partial model for the ground-truth function is available, the learning task can simply be performed on the residual dynamics.} transition map $f: \mathbb{R}^{n_x} \times \mathbb{R}^{n_u} \rightarrow \mathbb{R}^{n_x}$. Hard constraints $x_t \in \mathbb{X} = \{x \, | \, g_i(x) \leq 0, i=1,\dots,n_{\mathbb{X}}\}$ and $u_t \in \mathbb{U} = \{u \, | \, s_i(u) \leq 0, i=1,\dots,n_{\mathbb{U}}\}$ are imposed for all $t \in \mathbb{N}$, where $\mathbb{X}$ and $\mathbb{U}$ are polytopes. More general compact sets could also be considered, but the geometric assumptions made on $\mathbb{X}$ and $\mathbb{U}$ will later allow us to more easily verify set inclusions and constraint satisfaction.
+
+The control goal is to steer \eqref{eq.dyn_sys} from a given initial condition $x_0$ to a polytopic \textit{safe subset} of the state space
+\begin{equation}
+	\mathbb{X}_{\text{safe}} \subseteq \mathbb{X}
+\end{equation}
+while satisfying all constraints. Similarly to \cite{koller2018learning}, we also assume that a local policy $\pi_{\text{safe}}:\mathbb{X}_{\text{safe}} \rightarrow \mathbb{U}$ is available, making $\mathbb{X}_{\text{safe}}$ forward invariant, i.e., $\forall x_t \in \mathbb{X}_{\text{safe}}: \, f(x_t,\pi_{\text{safe}}(x_t)) \in \mathbb{X}_{\text{safe}}, \pi_{\text{safe}}(x_t) \in \mathbb{U}$. A frequent instance of this problem is the regulation of \eqref{eq.dyn_sys} to a specific fixed point, in which $\mathbb{X}_{\text{safe}} = \{x_{\text{eq}}\}$ and $\pi(x_{eq}) = u_{eq}$ is the equilibrium input. In order to accomplish our task, we assume to have access to noise-corrupted measurements of the unknown ground-truth dynamics in a format that will be later specified.
+
+The approach chosen to tackle the problem is that of recursively solving a finite-horizon optimal control problem, i.e., the MPC approach. To perform predictions, data could be used to build a single-step surrogate model and iterate over it. The number one obstacle to be overcome in this case is that of uncertainty propagation. Indeed, propagating sets through non-linear maps usually cannot be done in closed-form and involves several overbouding steps \citep{koller2018learning}. We therefore opt for learning various \textit{multi-step ahead models}, one for each of the $N$ prediction steps. Let $F_1: \mathbb{X} \times \mathbb{U} \rightarrow \mathbb{X}$ be the one-step ahead predictor in which each dimension in learned separately by models $\hat f_1, \dots, \hat f_{n_x}$\footnote{Learning each state dimension separately is necessary because the theory developed in this chapter only encompasses real-valued functions.}
+\begin{equation}
+	(x_0,u_0) \mapsto F_1(x_0,u_0) = \left( \hat{f}_1(x_0,u_0), \dots, \hat{f}_{n_x}(x_0,u_0)\right)
+\end{equation}
+Define $F_2$ as $(x_0,u_0,u_1) \mapsto F_2(x_0,u_0,u_1) = \left( \hat{f}_1(x_0,u_0,u_1), \dots, \hat{f}_{n_x}(x_0,u_0,u_1)\right)$, the two-step ahead model, and $F_3,\dots,F_N$ analogously. 
+
+Besides having nominal predictions, robust \textit{confidence sets} are used to ensure constraint satisfaction. These are set-valued functions of the type $\mathbb{X}_1: \mathbb{X} \times \mathbb{U} : \rightarrow 2^{\mathbb{X}}$, $\mathbb{X}_2: \mathbb{X} \times \mathbb{U} \times \mathbb{U} : \rightarrow 2^{\mathbb{X}}$, $\dots$ that are guaranteed to contain the unknown system evolution
+%\begin{equation}
+%	(x_0,u_0) \mapsto \mathcal{X}_1(x_0,u_0) = \left(\hat{f}_{1}(x_0,u_0) \pm \beta_1(x_0,u_0), \, \dots, \, \hat{f}_{n_x}(x_0,u_0) \pm \beta_{n_x}(x_0,u_0) \right)
+%	\label{eq.setValued}
+%\end{equation}
+%where $\beta(x,u)$ denotes the right-hand side of the inequality \eqref{eq.boundKRR}, and $a \pm b$ refers to the set $\{c \, | \, a-b \leq c \leq a+b\}$. Similarly, define also the maps $\mathcal{X}_2,\dots\mathcal{X}_N$, which share the same domain respectively with $F_2,\dots,F_N$. As a direct consequence of Theorem~\ref{th.mainOne}, we have that
+%
+\begin{equation}
+	\begin{aligned}
+		\mathbb{X}_1(x_0,u_0) &\ni f(x_0,u_0) \\
+		\mathbb{X}_2(x_0,u_0,u_1) &\ni f(f(x_0,u_0),u_1) \\
+		& \dots \\
+		\mathbb{X}_N(x_0,u_0,u_1,\dots,u_{N-1}) &\ni f(\dots f(f(x_0,u_0),u_1),\dots,u_{N-1}).
+	\end{aligned}
+	\label{eq.setValueds}
+\end{equation}
+
+\begin{figure}[b!]
+	\centering
+	\includegraphics{../images/chap2_kpc_sets.pdf} 
+	\caption{
+	%Nominal predictions $F_i$, robust confidence sets $\mathbb{X}_i$ and true system evolution $f$ for $N$ prediction steps.
+	The outcome of each map: Nominal predictions $F_t$ (\textbf{---}), confidence sets $\mathbb{X}_t$ (\textbf{- -}), and the unknown ground-truth $f$  (\textcolor{kindagray}{\textbf{---}}). All functions also depend on the chosen control sequence, which is omitted for clarity.}
+	\label{fig.kpc_sets}
+\end{figure}
+
+%\begin{figure}[b!]%[htbp]
+%	\floatconts
+%	{fig:example}% label
+%	{\vspace{-18pt} \caption{A schematic representation of the outcome of each model. Nominal predictions $F_t$ (\textbf{|}), confidence sets $\mathcal{X}_t$ (\textbf{- -}), and the unknown ground-truth $f$ (\textcolor{kindagray}{\textbf{|}}). All functions also depend on the chosen control sequence, which is omitted for clarity.}}% 
+%	{\includegraphics[width=0.78\textwidth]{pics/maps2}}
+%\end{figure}
+
+The diagram shown in Figure~\ref{fig.kpc_sets} illustrates the nominal predictions $F_i$ and confidence sets $\mathbb{X}_i$ all spawning from the initial state $x_0$. Notice how as defined above, $F_i$ and $\mathbb{X}_i$ are independent elements and need not to satisfy $F_i \in \mathbb{X}_i$, let alone being exactly in the geometric center of it as depicted in Figure~\ref{fig.kpc_sets}. Nevertheless, both these properties can be obtained if the nominal model and bounds given in Proposition~\ref{prop:closed_form_bounds} are employed. Also, the confidence sets are illustrated as hyper-rectangles to reflect the fact that uncertainty quantification is carried out individually in each dimension of the state-space.
+
+For the sake of training the multi-step ahead models and confidence sets, a particular set of data has to be gathered. For $F_1$ and $\mathbb{X}_1$, one needs $\{(x_t,u_t),y_t\}_{t=1}^d$, $y_t = f(x_t,u_t) + \delta_t$, where $|\delta_t| \leq \bar\delta$ and where disconnected one-step sequences can be put together. For $F_2$ and $\mathbb{X}_2$, one needs $\{(x_t,u_t,u_{t+1}),y_t\}_{t=1}^d$, $y_t = f(f(x_t,u_t),u_{t+1}) + \delta_t$. Following the same logic, for a general pair $F_N$ and $\mathbb{X}_N$, one needs tuples of states $x_t$ and $N-1$ control moves $u_t,\dots,u_{N-1}$ and the $N$th step ahead state $x_{t+N}$ possibly corrupted by noise. 
+
 \begin{remark}
-	The sub-optimal bounds presented in this subsection feature a nominal model at their center, which is desirable in many practical situations. In the optimal scenario, the minimum norm regressor $s^\star(x) = \alpha^{\star\top} K_{Xx}$, $\alpha^\star = \text{arg}\min_{\alpha \in \mathbb{R}^d} \{ \alpha^\top K_{XX} \alpha : \infnorm{K_{XX} \alpha - y} \leq \bar\delta \}$ can be used as a nominal model. This choice is guaranteed to lie completely within $\text{C}(x)$ and $\text{B}(x)$|although not necessarily in the middle|since the map $s^\star$ belongs to $\mathcal{H}$ and is a feasible solution for $\mathds{P}0$.
+	\textbf{(On collecting the multi-step ahead data):}
+	In practical scenarios, one typically performs various long experiments with the dynamical system to collect data and craft models. Clearly, an experiment that starts at a given initial state $x_0$, is followed by a sequence of inputs $u_t,\dots,u_{N-1}$, and where all states are logged $x_1,\dots,x_{N}$ (possibly with noise), yields one training tuple for every model $F_t$ and confidence set $\mathbb{X}_t$, $t=1,\dots,N$. We highlight that it is however not possible to extract multiple tuples from a long experiment to assemble the 1-step ahead dataset if noise is present. This is due to our measurement model \eqref{eq.observational_model}, whereby the initial state of a tuple cannot be corrupted.
+	%Training the associated kernel models requires various $N$-step experiments to be performed rather than simply having one-step ones. For instance, the model $F_N$ requires multiple tuples $(x_0,u_0,\dots,u_{N-1})$ as features and (possibly noisy) measurements of the resulting states $x_N$ as targets. We highlight that long sequences of linked states, i.e., long experiments, are preferred over various short ones even in classical parametric system identification \citep{lennart1999system}.
+\end{remark}
+
+With nominal models and confidence sets at hand, the finite-horizon optimal control problem can be formulated. Let $x_0$ be a given initial condition for the true dynamical system \eqref{eq.dyn_sys}, our Kernel Predictive Control formulation then reads
+
+\begin{subequations}
+	\begin{align}
+		\text{KPC}: \; \min_{X,U} & \quad \sum_{t=0}^{N-1} \ell (x_t,u_t) + \ell_f (x_N) \\
+		\text{subj. to} & \quad x_{t} = F_{t}(x_0,u_0,\dots,u_{t-1}), \, \forall t \label{eq.KPCnominal} \\
+		& \quad \mathbb{X}_t(x_0,u_0,\dots,u_{t-1}) \subseteq \mathbb{X}, \; \forall t \hspace{2cm} \label{eq.setContrs1} \\
+		& \quad \mathbb{X}_N(x_0,u_0,\dots,u_{N-1}) \subseteq \mathbb{X}_{\text{safe}} \label{eq.setContrs2} \\
+		& \quad u_t \in \mathbb{U}, \, \forall t 
+	\end{align}
+	\label{eq.KPC}%
+\end{subequations}
+where $X = (x_1,\dots,x_N)$, $U = (u_0,\dots,u_{N-1})$ are the decision variables, and $\ell(x,u)$ and $\ell_f(x)$ are appropriately designed stage and final costs. In a receding-horizon implementation, KPC is solved recursively, always supplying the current state of \eqref{eq.dyn_sys} to the optimization problem as the initial condition $x_0$, and only applying the first optimal control input to \eqref{eq.dyn_sys}.
+
+After having introduced \eqref{eq.KPC}, its properties should be discussed. First, recursive feasibility cannot be shown by means of the classical sequence shifting arguments due to the use of multiple confidence sets $\mathbb{X}_t$. Nevertheless, previous successful iterations can contribute to the feasibility of future KPC problems. More precisely, the closed-loop data of up to $N-1$ past steps can be used to reduce the uncertainty regarding the location of true next states \textit{without updating any models}. This is formalized in the safe relaxation strategy (SRS) stated next.
+
+\begin{proposition}
+	Assume that the $N-1$ previous consecutive \emph{KPC} iterations were feasible. Denote by $(u_{-N+1}, \dots, u_{-1})$ and $(x_{-N+1}, \dots, x_{-1})$ the closed-loop sequences of past controls and states, and by $x_0$ the current state. Let \emph{KPC}$^+$ be the \emph{KPC} optimization problem \eqref{eq.optControlProb} with set constraints $\mathbb{X}_1(x_0,u_0) \subseteq \mathbb{X}$, $\mathbb{X}_2(x_0,u_0,u_1) \subseteq \mathbb{X}$, $\dots$, $\mathbb{X}_{N-1}(x_0,u_0,\dots,u_{N-2}) \subseteq \mathbb{X}$ relaxed to
+	\begin{equation}
+		\label{eq.SRS}
+		\begin{aligned}
+			%
+			\mathbb{X}_1(x_0,u_0) &\cap \left( \, \bigcap_{i = 2}^{N} \mathbb{X}_{i} \, (x_{-i+1},u_{-i+1},\dots,u_{-1},u_0) \right) \subseteq \mathbb{X}, \\
+			%
+			\mathbb{X}_2(x_0,u_0,u_{1}) &\cap \left( \, \bigcap_{i=3}^N \mathbb{X}_{i} \, (x_{-i+2},u_{-i+2},\dots,u_{-1},u_0,u_1) \right) \subseteq \mathbb{X}, \ \dots
+			%
+		\end{aligned}
+	\end{equation}
+	Let \emph{KPC}$^+$ be feasible and $(X^\star,U^\star)$ be any of its feasible solutions. Then, $U^\star = (u_0^\star, \dots, u_{N-1}^\star)$ drives the true system \eqref{eq.dyn_sys} from $x_0$ to the safe set $\mathbb{X}_{\text{safe}}$ while satisfying the constraints at all times, i.e., $f(x_0,u_0^\star), \, f(f(x_0,u_0^\star),u_1^\star), \dots \, \in \mathbb{X}$, and $f(\dots f(f(x_0,u_0^\star),u_1^\star),\dots,u_{N-1}^\star) \in \mathbb{X}_{\text{safe}}$.
+	\label{prop.SRS}
+\end{proposition}
+
+\begin{remark}
+If only $M < N-1$ previous KPC iterations were feasible, \eqref{eq.SRS} can be adapted to have less set intersections and still achieve some relaxation.
+\end{remark}
+
+Let the \emph{KPC} problem \eqref{eq.KPC} be feasible and $(X^\star,U^\star)$ be any of its feasible solutions. The sequence of inputs $U^\star = (u_0^\star, \dots, u_{N-1}^\star)$ drives the true system \eqref{eq.dyn_sys} from $x_0$ to the safe set $\mathbb{X}_{\text{safe}}$ while satisfying the constraints at all times, i.e., $f(x_0,u_0^\star), \, f(f(x_0,u_0^\star),u_1^\star), \dots \, \in \mathbb{X}$, and $f(\dots f(f(x_0,u_0^\star),u_1^\star),\dots,u_{N-1}^\star) \in \mathbb{X}_{\text{safe}}$. This is evident from the robust confidence sets definition in \eqref{eq.setValueds}. What the SRS property given in Proposition~\ref{prop.SRS} ensures is that this latter guarantee remains unchanged even after imposing less strict set constraints. 
+
+In order to numerically solve the KPC problem \eqref{eq.KPC}, the set inclusions have to assume a more concrete form. Suppose that the confidence sets are described by
+\begin{equation}
+	\mathbb{X}_t(x_0,u_o,\dots,u_{t-1}) = \{ x \, | \vert x - F_t(x_0,u_o,\dots,u_{t-1}) \vert \leq \mathcal{B}_t(x_0,u_o,\dots,u_{t-1}) \}
+	\label{eq.confidence_sets_centered}
+\end{equation} 
+where the absolute value $|\cdot|$ and the inequality are to be understood element-wise. Put differently, \eqref{eq.confidence_sets_centered} defines $\mathbb{X}_t$ as a hyperrectangle whose center is the nominal prediction $F_t$, just as depicted in Figure~\ref{fig.kpc_sets}. Such robust confidence sets can be obtained through the use of Proposition~\ref{prop:closed_form_bounds}. In this case, a coordinate transformation can be employed along with the closed-form solution of the obtained hyper-cube support function to reformulate the constraint. More concretely, consider the condition $\mathbb{X}_t \subseteq \mathbb{X}$, where the arguments of $\mathcal{X}_t$ are omitted to ease notation. This constraint is satisfied if for each one of the half-spaces $g_i(x) = H_i x - h_i \leq 0$ that describe the polyhedron $\mathbb{X}$ it holds that
+%
+\begin{subequations}
+	\label{eq.set_constraint_reformulation}
+\begin{align}
+	& \forall x \in \mathbb{X}_t: \, g_i(x) \leq 0 \ \\[3pt]
+	\Leftrightarrow \, & \max \{ g_i(x) \, | \, x \in \mathbb{X}_t \} \, \leq 0 \\[3pt]
+	\Leftrightarrow \, & \max \{ H_i^\top \, x - h_i \, | \, \vert x - F_t \vert \leq \mathcal{B}_t \} \, \leq 0 \label{eq.constr} \\[3pt]
+	%
+	%\Leftrightarrow \, & \max \{ H_i \, \Omega_t (x+F_t) - h_i \, | \, \Vert x \Vert_\infty \leq 1 \} \, \leq 0 \\[3pt]
+	%
+	%\Leftrightarrow \, & \, \Vert H_i \, \Omega_t \Vert_1 + H_i \, \Omega_t F_t - h_i \, \leq 0 \label{eq.withOneNorm}
+	\Leftrightarrow \, & \max \{ H_i^\top \, (B_t \, x+F_t) - h_i \, | \, \Vert x \Vert_\infty \leq 1 \} \, \leq 0 \\[3pt]
+	%
+	\Leftrightarrow \, & \, \Vert H_i^\top B_t \Vert_1 + H_i^\top F_t - h_i \, \leq 0 \label{eq.last_KPC_reform_set_constr}
+	%\\[3pt]
+	%
+	%\Leftrightarrow \, & \, \exists \lambda_i: \, \vert H_i \, \Omega_t \vert - \lambda_i \leq 0, \ \, \textbf{1}^\top \lambda_i + H_i \, F_t - h_i \, \leq 0
+\end{align}
+\end{subequations}
+where the arguments of $\mathbb{X}_t$, $F_t$ and $\mathcal{B}_t$ were omitted to ease notation, and $B_t := \text{diag}\left( \mathcal{B}_t \right) \in \mathbb{R}^{n_x \times n_x}$. In contrast with the abstract set inclusions found in \eqref{eq.SRS}, \eqref{eq.last_KPC_reform_set_constr} is implementable\footnote{The one-norm can be eliminated from \eqref{eq.last_KPC_reform_set_constr} by introducing new auxiliary variables and inequality constraints, a standard linear programming procedure.}. It should be underlined that \eqref{eq.last_KPC_reform_set_constr} is still a non-convex inequality constraint as $B_t$ and $F_t$ are kernelized functions of the decision variables.
+
+\begin{remark}
+	The reformulation \eqref{eq.set_constraint_reformulation} is needed to tackle general polytopic feasible sets $\mathbb{X}$ that are not necessarily aligned with our uncertainty estimates. If, however, $\mathbb{X}$ is simply a hyper-box aligned with each axis and, thus, also with $\mathbb{X}_t$, verifying the inclusion becomes trivial.
 \end{remark}
 
 \section{Numerical examples}
 
+A number of numerical examples are presented next to put to test the previously proposed strategies in different settings. This will also allow us to better understand what they entail and what practical aspects one should mind to avoid pitfalls.
+
+\textbf{Example 1:} We start with the uncertainty quantification problem of the following map
+\begin{equation}
+	\label{eq:ex1_gtfunc}
+	f^\star(z_1,z_2) = 1 - 0.8 z_1^2 + z_2 + 8 \sin(0.8z_2)
+\end{equation}
+restricted to the domain $\mathcal{X} = \{ x \in \mathbb{R}^2 \, | \, \Vert x \Vert_\infty \leq 10 \}$, $x = [z_1 \; z_2]$. A squared-exponential kernel $k(x,x') = \exp \left(-\frac{\Vert x - x'\Vert^2}{2\ell^2}\right)$ was chosen for our experiments with lengthscale $l=5$, which was empirically estimated by gridding the search-space and performing posterior validation.
+
+Strictly speaking, the UQ techniques developed in this chapter require $f^\star \in \rkhs$ as per Assumption~\ref{as:rkhs_contains_gt}. As opposed to the examples depicted in Figures~\ref{fig.ex_opt_bounds}--\ref{fig.ex4} whose ground-truths were finite sums of partially evaluated kernels, \eqref{eq:ex1_gtfunc} is a polynomial-trigonometric map and it is not clear if it belongs or not to the SE RKHS. One should nevertheless bear in mind that such an RKHS is dense in the space of continuous functions as stated in Proposition~\ref{prop.univ_kernels} and even if $f^\star \not\in \rkhs$, there exists a $f^* \in \rkhs$ that is point-wise arbitrarily close to $f^\star$. As a result, it is customary in practice to overlook Assumption~\ref{as:rkhs_contains_gt} if we are sure that the function being considered is continuous and the kernel, universal.
+ 
+The norm estimate $\Gamma$ was obtained through the sampling procedure described in Appendix~\ref{sec.appendix_estimating_rkhs_norms} with a final value of $\Gamma=1200$. Next, $d=100$ samples were collected in two different ways: points lying on an equidistant grid, and being drawn randomly from a uniform distribution. Noise was added to both data-sets, sampled uniformly in the interval $-\bar\delta \leq \delta \leq \bar\delta$ with $\bar \delta = 1$ and later with $\bar \delta = 5$.
+
+Figure~\ref{fig.numex_ex1_3d} displays the ground-truth $f^\star$ along with the optimal upper bound C$(x)$ computed by solving \eqref{eq.P1case1} for all four scenarios. Consider first the cases where $\bar \delta = 1$. Whereas the $\text{C}(x)$ surface was overall tight for the grid-based dataset, with an average distance of $3.01$ to the ground-truth, randomized data yielded a less regular bound with an average distance of $8.02$. These numbers were increased respectively to $9.57$ and $18.97$ when the noise level was risen to $\bar \delta = 5$. The plots illustrate the disadvantages of relying on completely randomized input locations, which degrade especially the borders of $\text{C}(x)$. An equidistant grid of points is highly favorable since it not only fills the domain well, but also ensures a minimum separation distance so that no two inputs are too close to each other, thus also avoiding numerical problems when handling the kernel matrix $K_{XX}$. 
+
+The $f^\star(z_1,z_2)$ map was then sliced at $z_1 = -3$. The entire envelope $\text{B}(x) \leq x \leq \text{C}(x)$ was computed and compared to the sub-optimal bounds given in Proposition~\ref{prop:closed_form_bounds} for a kernel ridge regression model with $\lambda = 10^{-2}$. The obtained results for $\bar\delta = 1$ are shown in Figure~\ref{fig.numex_ex1_2d}. As can be seen from the plots, the optimal approach yielded tighter uncertainty intervals that were always within the sub-optimal ones. Moreover, whereas the average width of the red envelope was 8.93 and 18.96 respectively in the grid and random cases, the dashed black envelope displayed average widths of 21.13 and 34.62.
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[scale=0.4]{../images/chap2_numex_ex1_grid_1.pdf} \hspace{5pt}
+	\includegraphics[scale=0.4]{../images/chap2_numex_ex1_grid_5.pdf} \\[13pt]
+	\includegraphics[scale=0.4]{../images/chap2_numex_ex1_rnd_1.pdf} \hspace{5pt}
+	\includegraphics[scale=0.4]{../images/chap2_numex_ex1_rnd_5.pdf} 
+	\caption{The ground-truth (black) and the optimal upper bound C$(x)$ (red) with $100$ data-points and different sampling methods and noise levels.}
+	\label{fig.numex_ex1_3d}
+	\vspace{15pt}
+	\includegraphics[scale=0.4]{../images/chap2_numex_ex1_slice_grid_1.pdf} \hspace{5pt}
+	\includegraphics[scale=0.4]{../images/chap2_numex_ex1_slice_rnd_1.pdf} 
+	\caption{The ground-truth (solid black) sliced at $z_1 = -3$, the optimal bounds (red) and the sub-optimal bounds (dashed black).}
+	\label{fig.numex_ex1_2d}
+\end{figure}
+
+It is desirable to have tight bounds $\bar\delta$ and $\Gamma$ in order to reduce conservativeness. This is however not possible in most practical applications where one has to estimate those quantities from data alone. To investigate the sensitivity of the resulting bounds with respect to those parameters, $\bar\delta$ and $\Gamma$ were varied to build
+
+\begin{landscape}
+	\vspace{30pt}
+	\begin{table}
+		\centering
+		\caption{Noise uniformly sampled from $-1\leq \delta \leq 1$. 100 data-points were collected from the ground-truth \eqref{eq:ex1_gtfunc} in an equidistant grid (grid) or randomly following a uniform distribution (rnd). The table shows the average distance between the upper and lower bounds in the optimal (opt) and sub-optimal (sub) cases with various noise bounds $\bar\delta$ and RKHS norm estimates $\Gamma$.}
+		\label{tab.numex_ex1_delta1}
+		%\begin{tabular}{| c c || c | c | c || c | c | c || c | c | c ||} 
+		\begin{tabular}{c c c c c c c c c c c } 
+			%\hline
+			\cmidrule[.15em](l{\tabcolsep}r{\tabcolsep}){1-11}
+			\multicolumn{2}{ r }{$\Gamma$} & \multicolumn{3}{c}{1200}  & \multicolumn{3}{c}{1800} & \multicolumn{3}{c}{2400}\\
+			%\hline
+			\cmidrule[.05em](l{\tabcolsep}r{\tabcolsep}){2-11}
+			\multicolumn{2}{r}{$\bar\delta$} & 1 & 1.5 & 2  & 1 & 1.5 & 2 & 1 & 1.5 & 2  \\
+			%\hline \hline
+			\cmidrule[.15em](l{\tabcolsep}r{\tabcolsep}){2-11}
+			\multirow{3}{*}{\rotatebox[origin=c]{90}{\hspace{13pt}grid}} & opt & 6.21 & 8.35 & 10.34 &   7.45  & 9.75 & 11.90 & 8.50 & 10.94 & 13.20  \\
+			\cmidrule[.05em](l{\tabcolsep}r{\tabcolsep}){2-11}
+			& sub & 11.07  & 15.60 & 20.13   & 11.70  & 16.23 & 20.76 & 12.36  & 16.89 & 21.42  \\
+			%\hline \hline
+			\cmidrule[.15em](l{\tabcolsep}r{\tabcolsep}){2-11}
+			\multirow{3}{*}{\rotatebox[origin=c]{90}{\hspace{14pt}rnd}} & opt & 14.62  & 19.02 & 22.89  & 18.05  & 23.08 & 27.51 & 20.85  & 26.39 &  31.26 \\
+			%\cline{2-11}
+			\cmidrule[.05em](l{\tabcolsep}r{\tabcolsep}){2-11}
+			& sub & 64.78  & 93.99 & 123.20  & 65.91  & 95.12 & 124.33 & 67.07  & 96.28 & 125.49  \\
+			%\hline \hline
+			\cmidrule[.15em](l{\tabcolsep}r{\tabcolsep}){1-11}
+		\end{tabular}
+	\end{table}
+	%
+	\begin{table}
+		\centering
+		\caption{Noise uniformly sampled from $-5\leq \delta \leq 5$. 100 data-points were collected from the ground-truth \eqref{eq:ex1_gtfunc} in an equidistant grid (grid) or randomly following a uniform distribution (rnd). The table shows the average distance between the upper and lower bounds in the optimal (opt) and sub-optimal (sub) cases with various noise bounds $\bar\delta$ and RKHS norm estimates $\Gamma$.}
+		\label{tab.numex_ex1_delta5}
+		\begin{tabular}{c c c c c c c c c c c} 
+			\cmidrule[.15em](l{\tabcolsep}r{\tabcolsep}){1-11}
+			\multicolumn{2}{r}{$\Gamma$} & \multicolumn{3}{c}{1200}  & \multicolumn{3}{c}{1800} & \multicolumn{3}{c}{2400}\\
+			\cmidrule[.05em](l{\tabcolsep}r{\tabcolsep}){2-11}
+			\multicolumn{2}{r}{$\bar\delta$} & 5 & 7.5 & 10  & 5 & 7.5 & 10 & 5 & 7.5 & 10  \\
+			\cmidrule[.15em](l{\tabcolsep}r{\tabcolsep}){2-11}
+			\multirow{3}{*}{\rotatebox[origin=c]{90}{\hspace{13pt}grid}} & opt & 20.29 & 28.57 & 36.39 & 22.54  & 31.31 & 39.58 & 24.41 & 33.56 & 42.17  \\
+			\cmidrule[.05em](l{\tabcolsep}r{\tabcolsep}){2-11}
+			& sub & 49.15  & 71.79 & 94.44  & 49.81 & 72.46 & 95.11 & 50.48  & 73.13 & 95.78  \\
+			\cmidrule[.15em](l{\tabcolsep}r{\tabcolsep}){2-11}
+			\multirow{3}{*}{\rotatebox[origin=c]{90}{\hspace{14pt}rnd}} & opt & 39.95  & 53.43 & 65.41  & 47.00  & 62.15 & 75.57 & 52.76  & 69.32 & 83.89  \\
+			\cmidrule[.05em](l{\tabcolsep}r{\tabcolsep}){2-11}
+			& sub & 312.44  & 458.51 & 604.57  & 313.61   & 459.68 & 605.74 &  314.79 & 460.85 & 606.91  \\
+			\cmidrule[.15em](l{\tabcolsep}r{\tabcolsep}){1-11}
+		\end{tabular}
+	\end{table}
+\end{landscape}
+
+a total of 18 test scenarios, divided into two noise cases as shown in Tables~\ref{tab.numex_ex1_delta1} and \ref{tab.numex_ex1_delta5}. The figures are consistent in showing that the average width was not significantly affected by an increase in $\Gamma$. Analyzing the numbers from Table~\ref{tab.numex_ex1_delta1}, the width of the optimal envelope  increased on average by 34\% when augmenting $\Gamma$ from 1200 to 2400, and the width of the sub-optimal envelope increased on average by 5.2\%. Repeating the analysis on Table~\ref{tab.numex_ex1_delta5}, the optimal envelope showed an average width increase of 24\%, whereas the sub-optimal one, of 1.38\%. Despite the larger relative increase of the optimal bounds width, their absolute values were on average 3.45 times smaller than the sub-optimal ones in Table~\ref{tab.numex_ex1_delta1} and 5.79 times smaller in Table~\ref{tab.numex_ex1_delta5}, which exposes the degree of conservativeness of the latter approach.
+
+\textbf{Example 2:} The next numerical experiment involves having the map \eqref{eq:ex1_gtfunc} as a constraint in a static optimization problem\footnote{Maximizing/minimizing a given objective under unknown constraints is typical in the field of real-time optimization, see e.g. \citep{chachuat2009adaptation}.}. Consider the following formulation
+\begin{subequations}
+	\label{eq:rto}
+	\begin{align}
+		\min_{z \in \mathbb{R}^2} & \quad (z_1-1)^2 + (z_2-5)^2  \\ 
+		\text{\normalfont subj. to} & \ \; 
+		f^\star(z) \le -10, \label{eq:rtocons}
+	\end{align}
+\end{subequations}
+where the function $f^\star(z)$ given by \eqref{eq:ex1_gtfunc} is not explicitly known, but can be measured, evaluated. Samples were used to establish an upper bound $\text{C}(z)$ for $f^\star(z)$, hence providing an inner-approximation for the true feasible set of \eqref{eq:rto}. 
+
+We considered the cases of having 64, 81 and 100 evaluations of $f^\star(z)$ affected by noise with $\bar\delta=1$ and, once more, the data were collected by means of a uniform random distribution and an equidistant grid. The same kernel function and RKHS norm estimate of $\Gamma=1200$ from Example~1 were used. In the surrogate optimization problems, \eqref{eq:rtocons} was replaced by $C(z)\le -10$. Optimizers $z^\star$ were computed by gridding the domain, and the results along with the estimated feasible sets (shaded areas) are shown in Figure~\ref{fig:constraints}. Notice how in some instances the set of feasible decisions is not connected. Thanks to Proposition~\ref{prop.decreasing}, the addition of new data-points can only relax the approximate formulation, hence reducing the found minimum.
+Indeed, the obtained solutions for the approximate problems were $13.21$, $11.36$ and $10.96$, respectively with $64$, $81$ and $100$ samples taken randomly. When employing a grid, the figures were $10.67$, $8.48$ and $7.67$. The solution of the real problem, i.e., the one with the ground-truth constraint, is $5.69$.
+
+\begin{figure*}[t]
+	\centering
+	\includegraphics[scale=0.25]{../images/chap2_numex_ex2_gt.pdf} \\
+	\includegraphics[scale=0.25]{../images/chap2_numex_ex2_res.pdf}
+	\caption{Solutions and feasible sets (shaded areas) of the surrogate optimization problems, i.e., \eqref{eq:rto} with the constraint replaced by its optimal upper bound C$(x) \leq -10$. The individual solutions are denoted by the yellow, orange and red triangles and stars. The true optimum is depicted as a black star.}
+	\label{fig:constraints}
+\end{figure*}
+
+\textbf{Example 3:} In this example, UQ will be used to verify the safety of a sequence of control actions driving a dynamical system. As opposed to the grid-based and randomized sampling methods used in the previous examples, the dynamics will be taken into account and data will be gathered directly from trajectories.
+
+Consider a continuous stirred-tank reactor (CSTR) described by the continuous-time differential equations \begin{subequations}
+	\begin{align}
+		\dot{c}_A(t) &= u(t)(c_{A0}-c_A(t)) - \rho_1 c_A(t) - \rho_3 c_A^2(t)  \\ 
+		\dot{c}_B(t) &= -u(t)c_B(t) + \rho_1 c_A(t) - \rho_2 c_B^2(t)
+	\end{align}
+\end{subequations}
+where $c_A$ and $c_B$ denote respectively the concentrations of cyclopentadiene and cyclopentenol, whereas $u$ represents the feed inflow of cyclopentadiene. The parameters are $\rho_1 = \rho_2 = 4.1 \times 10^{-3}$ h$^{-1}$, $\rho_3 = 6.3 \times 10^{-4}$ h$^{-1}$, $c_{A0} = 5.1$ mol/l. The system is subject to the constraints $1 \leq c_A \leq 3$, $0.5 \leq c_B \leq 2$, $3 \leq u \leq 25$, and is sampled at a rate of $1/30~$Hz. The goal is to drive the states from a number of initial conditions to the reference values $c_A^{\text{ref}} = 2.14$, $c_B^{\text{ref}} = 1.09$. To achieve this objective, a finite-horizon optimal control problem (OCP) with horizon $N=8$ was formulated employing a standard quadratic cost with a larger terminal weight but no terminal set constraint. The OCP relied on a KRR nominal model learned from data and no uncertainty quantification, i.e., relied on certainty equivalence.
+
+\begin{figure}[t]
+	\centering
+	\includegraphics[scale=0.4]{../images/chap2_numex_ex3_time_subopt.pdf} \hspace{5pt}
+	\includegraphics[scale=0.4]{../images/chap2_numex_ex3_time_opt.pdf}
+	\caption{The ground-truth (black) and the upper optimal bound C$(x)$ (blue) with $100$ data-points. Two noise levels are considered, $\bar\delta = 1$ and $\bar\delta = 5$, and two sampling strategies, an equidistant grid and random uniform sampling.}
+	%\label{fig:gridrandcomp}
+	\vspace{15pt}
+	\includegraphics[scale=0.4]{../images/chap2_numex_ex3_phase_subopt.pdf} \hspace{5pt}
+	\includegraphics[scale=0.4]{../images/chap2_numex_ex3_phase_opt.pdf} 
+	\caption{A comparison between the optimal bounds (blue) and the closed-form sub-optimal ones (green). The 2D ground-truth was sliced at $z_1 = -3$ and is shown in dashed black.}
+\end{figure}
+
+To verify if OCP control actions would not lead to the true system violating constraints, we employed our kernelized UQ technique. First, the problem was broken down into several steps: the 1-step ahead analysis, the 2-step ahead analysis, and so on. The datasets associated with each step are composed of initial states and sequences of control actions to form $x_i$, and the final state to form $y_i$ (this multi-step approach is the same as the one explained in Section~\ref{sec.kpc}). The squared-exponential kernel was used throughout the whole process and the various lengthscales were selected through a 5-fold cross-validation process based on 400 samples (see Section~\ref{sec.appendix_hyerparams}). The same batch of data were exploited to estimate the different RKHS norms $\Gamma$ following the procedure of Section~\ref{sec.appendix_estimating_rkhs_norms}. The obtained lower estimates were then augmented to account for possible unseen complexity. Distinct datasets were gathered to compute the bounds by starting the system at $800$ initial conditions and solving OCP from those locations. We highlight that, as there are two states and one control variable, the domain of the ground-truth mapping the initial condition to the 8-th step ahead state has dimension 10, hence justifying the need for a large dataset. The noise affecting the measurements was drawn uniformly from the interval $-0.05$ to $0.05$, and a bound of $\bar \delta = 0.06$ was used.
+
+The two types of bounds were then computed defining an interval per state and, thus, a ``bounding box'' for each step. These are then guaranteed to contain the true system evolution, the ground-truth, as illustrated in Figure~\ref{fig:cstr_phase}. 
+In addition to it, one bounding box around the trajectory that starts at the bottom right corner of the plots extends below the $c_B \geq 0.5$ constraint. A time-domain view of the situation is shown in Figure~\ref{fig:cstr_time}, where at time-step $1$ the lower-bound violates the aforementioned constraint in the top plot, but not in the bottom one. As a result, the OCP control sequence could not be certified by the sub-optimal approach, but could by means of the optimal one.
 
 %%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%
@@ -573,6 +855,7 @@ Finally, recall that \eqref{eq.relaxedObjective} was a (conservative) upper boun
 \section{Appendices}
 
 \subsection{Estimating kernel hyperparameters}
+\label{sec.appendix_hyerparams}
 
 Kernel functions typically feature a number of internal constants that need to be specified by the user, the so-called \textit{hyperparameters}. Although some theoretical properties remain insensitive to the final choice of hyperparameters\footnote{For instance, the squared-exponential kernel is universal (Definition~\ref{def.universal_kernel}) regardless of the its lengthscale value. On the other hand, it is known that if $k_\ell$ is a squared-exponential kernel with lengthscale $\ell$, then $\rkhs_{k_{\ell1}}$... \mycomment{cite Ingo's book}}, the numerical stability and real-world performance of kernel algorithms highly depend on the tuning of these numbers \citep{fasshauer2011positive}. 
 
@@ -687,6 +970,11 @@ The column vector $f_X$ is made of function evaluations $f(x_i)$, which are repe
 \end{my_proof}
 
 \begin{my_proof}
+	\textbf{Proof of Proposition~\ref{prop.smallWidth}:}
+	Follows from $\text{C}(x_i) \geq \text{B}(x_i)$, $\text{C}(x_i) \leq y_{i,j} + \bar \delta$ and $\text{B}(x_i) \geq y_{i,j} - \bar \delta$ for any $i=1,\dots,d$ and any $j=1,\dots,n_i$. 
+\end{my_proof} 
+
+\begin{my_proof}
 	\textbf{Proof of Proposition~\ref{prop.decreasing}:}
 	Denote by $\mathds{P}1_1$ the problem solved with $D_1$ and decision variables $\begin{bmatrix} c & c_x \end{bmatrix}$. Similarly, $\mathds{P}1_2$ is associated with the dataset $D_2$ and the decision variables $\begin{bmatrix} c & c_x & c_z \end{bmatrix}$, where $c_z$ are due to the additional input in $D_2$. Since $D_2$ contains all members of $D_1$, the $\infty$-norm constraint of $\mathds{P}1_2$ can be recast as that of $\mathds{P}1_1$ and an additional constraint for $c_z$ and the new outputs. Let $\mathds{X}  := X \cup \{x\}$, $\bar c := \begin{bmatrix} c^\top c_x \end{bmatrix}^\top$ and $z := x_{d+1}$ be shorthand variables to ease notation. The complexity constraint of $\mathds{P}1_2$ is then
 	\begin{subequations}
@@ -756,21 +1044,22 @@ The column vector $f_X$ is made of function evaluations $f(x_i)$, which are repe
 		\mathcal{L}(z,\lambda,\beta,\gamma) = a^\top z - \lambda (z^\top K_{\mathds{X}\mathds{X}}^{-1}z - \Gamma^2) - \beta^\top(\Lambda Az - \mathsf{y} - \bar \delta \textbf{1})- \gamma^\top(\mathsf{y} -\Lambda Az - \bar \delta \textbf{1})
 	\end{equation}
 	where $K_{\mathds{X}\mathds{X}}$ denotes the kernel matrix evaluated at $X \cup \{x\}$. Suppose $\lambda > 0$. Computing $\nabla_z\mathcal{L}(z^\star) = 0$ leads to
-	$$z^\star = -\frac{1}{2\lambda}K_{\mathds{X}\mathds{X}} \left( A^\top \Lambda^\top (\beta - \gamma) - a \right).$$ Defining the auxiliary variable $\nu = \beta - \gamma$, and substituting $z^\star$ into \eqref{eq.lagrangianP2} gives the dual objective
+	$$z^\star = -\frac{1}{2\lambda}K_{\mathds{X}\mathds{X}} \left( A^\top \Lambda^\top (\beta - \gamma) - a \right).$$ 
+	Note that $\beta$ and $\gamma$ cannot be simultaneously zero element-wise. Defining $\nu := \beta - \gamma$ and substituting $z^\star$ into \eqref{eq.lagrangianP2} gives the dual objective
 	\begin{align}\notag
 		g(\lambda,\nu) 
-		=\;& \frac{1}{4\lambda} \nu^\top \Lambda A \textcolor{red}{K_{\mathds{X}\mathds{X}}} A^\top \Lambda^\top \nu + \left(\mathsf{y} - \frac{1}{2\lambda} \Lambda A \textcolor{red}{K_{\mathds{X}\mathds{X}}} a \right)^\top \nu \\
-		&+ \bar \delta \Vert \nu \Vert_1 +  \frac{1}{4\lambda} a^\top \textcolor{red}{K_{\mathds{X}\mathds{X}}} a + \lambda \Gamma^2 \\\notag
+		=\;& \frac{1}{4\lambda} \nu^\top \Lambda A K_{\mathds{X}\mathds{X}} A^\top \Lambda^\top \nu + \left(\mathsf{y} - \frac{1}{2\lambda} \Lambda A K_{\mathds{X}\mathds{X}} a \right)^\top \nu \\
+		&+ \bar \delta \Vert \nu \Vert_1 +  \frac{1}{4\lambda} a^\top K_{\mathds{X}\mathds{X}} a + \lambda \Gamma^2 \\\notag
 		=\;& \frac{1}{4\lambda} \nu^\top \Lambda K_{XX} \Lambda^\top \nu + \left(\mathsf{y} - \frac{1}{2\lambda} \Lambda K_{Xx} \right)^\top \nu \\
 		&+ \bar \delta \Vert \nu \Vert_1 +  \frac{1}{4\lambda} k(x,x) + \lambda \Gamma^2 \label{eq.dualDerivation}
 	\end{align}
 
-	where in the second equality the matrix \textcolor{red}{$K_{\mathds{X}\mathds{X}}$} was expanded and the resulting terms were reorganized. Since $\beta,\gamma \in \mathbb{R}^{\tilde d}_{\geq 0}$ and $\nu = \beta - \gamma$ then $\nu$ is unconstrained.
+	where in the second equality the matrix $K_{\mathds{X}\mathds{X}}$ was expanded and the resulting terms were reorganized. Since $\beta,\gamma \in \mathbb{R}^{\tilde d}_{\geq 0}$ and $\nu = \beta - \gamma$ then $\nu$ is unconstrained.
 	
 	Now if $\lambda = 0$, the Lagrangian \eqref{eq.lagrangianP2} simplifies to
 	$\mathcal{L}(z,\nu) = (a - A^\top \Lambda^\top \nu)^\top z + \nu^\top \mathsf{y} + \bar\delta \Vert \nu \Vert_1 \label{eq.lamZero}$, which is linear in $z$. Its supremum w.r.t. $z$ is only finite if $a = A^\top\Lambda^\top\nu$. Recalling the definitions of $a$, $A$ and $\Lambda$, one can see that $\nexists \nu$ that could satisfy the latter condition. Therefore, $\lambda = 0 \implies \sup_z \mathcal{L}(z,\lambda,\nu) = +\infty$, meaning that the dual problem is infeasible. As a conclusion, the Lagrangian dual of $\mathds{P}1$ in \eqref{eq.P2} is precisely $\mathds{D}1$ in \eqref{eq.dualProb}.
 	
-	Next, consider the case $x \in X$, $x = x_i$. The objective of $\mathds{P}1'$ can be written as $a^\top c$ with $a_i = 1$ and $a_n=0, n \neq i$. When deriving its Lagrangian, one obtains again \eqref{eq.lagrangianP2} with the simplifications: $z \leftarrow c$, $\textcolor{red}{K_{\mathds{X}\mathds{X}}} \leftarrow K_{XX}$ and $A \leftarrow \textbf{I}$. We proceed by analyzing the two scenarios for $\lambda$ as before. If $\lambda > 0$, the previous derivations apply, leading to the same the quadratic-over-linear objective \eqref{eq.dualDerivation}. However, if $\lambda = 0$, the Lagrangian becomes $\mathcal{L}(z,\nu) = (a -  \Lambda^\top \nu)^\top z + \nu^\top \mathsf{y} + \bar\delta \Vert \nu \Vert_1$, whose supremum w.r.t. $z$ is only finite if $a = \Lambda^\top \nu$. In contrast with the previous paragraph, this condition now can be satisfied. It is equivalent to $\nu_{i,1} + \dots + \nu_{i,n_i} = 1$, where the variables are all the multipliers associated with the $i$-th input location $x_i$. The resulting expression can be minimized analytically, yielding the minimum $\min_{j} y_{i,j} + \bar\delta$, i.e., the smallest output available at $x_i$ augmented by the noise bound. Finally, we conclude that the dual objective for $\mathds{P}1'$ is
+	Next, consider the case $x \in X$, $x = x_i$. The objective of $\mathds{P}1'$ can be written as $a^\top c$ with $a_i = 1$ and $a_n=0, n \neq i$. When deriving its Lagrangian, one obtains again \eqref{eq.lagrangianP2} with the simplifications: $z \leftarrow c$, $K_{\mathds{X}\mathds{X}} \leftarrow K_{XX}$ and $A \leftarrow \textbf{I}$. We proceed by analyzing the two scenarios for $\lambda$ as before. If $\lambda > 0$, the previous derivations apply, leading to the same the quadratic-over-linear objective \eqref{eq.dualDerivation}. However, if $\lambda = 0$, the Lagrangian becomes $\mathcal{L}(z,\nu) = (a -  \Lambda^\top \nu)^\top z + \nu^\top \mathsf{y} + \bar\delta \Vert \nu \Vert_1$, whose supremum w.r.t. $z$ is only finite if $a = \Lambda^\top \nu$. In contrast with the previous paragraph, this condition now can be satisfied. It is equivalent to $\nu_{i,1} + \dots + \nu_{i,n_i} = 1$, where the variables are all the multipliers associated with the $i$-th input location $x_i$. The resulting expression can be minimized analytically, yielding the minimum $\min_{j} y_{i,j} + \bar\delta$, i.e., the smallest output available at $x_i$ augmented by the noise bound. Finally, we conclude that the dual objective for $\mathds{P}1'$ is
 	\begin{equation}
 		g(\lambda,\nu) = 
 		\begin{cases}
@@ -792,17 +1081,28 @@ The column vector $f_X$ is made of function evaluations $f(x_i)$, which are repe
 \end{my_proof} 
 
 \begin{my_proof}
-	\textbf{Proof of Proposition~\ref{prop.smallWidth}:}
-	Follows from $\text{C}(x_i) \geq \text{B}(x_i)$, $\text{C}(x_i) \leq y_{i,j} + \bar \delta$ and $\text{B}(x_i) \geq y_{i,j} - \bar \delta$ for any $i=1,\dots,d$ and any $j=1,\dots,n_i$. 
-\end{my_proof} 
-
-\begin{my_proof}
-	\textbf{Proof of Proposition~\ref{prop.norms_mismatch}:}
-	It follows from expanding $\Vert s_n \Vert_\rkhs^2$ and $\Vert \tilde s_n \Vert_\rkhs^2$.
+	\textbf{Proof of Proposition~\ref{prop.noise_free_bound}:}
+	First note that 
+	\begin{align}
+		\rknorm{f-s}^2 &= \rkinner{f-s}{f-s} \\
+		&= \rkinner{f}{f} - 2\rkinner{f}{s} + \rkinner{s}{s} \\
+		&= \rknorm{f}^2 - 2\rkinner{f}{s} + \rknorm{s}^2 \\
+		&= \rknorm{f}^2 - 2\rknorm{s}^2 + \rknorm{s}^2 \label{eq.not_so_straightforward}\\
+		&\leq \Gamma^2 -  \rknorm{s}^2 \label{eq.last_one}
+	\end{align}
+	where \eqref{eq.not_so_straightforward} was established thanks to 
+	\begin{align}
+		\rkinner{f}{s} &= \left\langle f, \sum_{i=1}^d \alpha_i k(\cdot,x_i) \right\rangle_\mathcal{H} \\
+		&= \sum_{i=1}^d \alpha_i f(x_i) \\
+		&= \sum_{i=1}^d \alpha_i  s (x_i) \\
+		&= \sum_{i=1}^d \alpha_i \left(\sum_{j=1}^d \alpha_j k(x_j,x_i) \right) \\
+		&= \rknorm{s}^2
+	\end{align}
+	and recalling that $s(x_i) = f(x_i)$ $i=1,\dots d$ given the noise-free setting. Combining \eqref{eq.last_one} with the inequality $|s(x) - f(x)| \leq P_X(x) \rknorm{f - s}$ \cite[§11.5]{wendland2004scattered} completes the proof. 
 \end{my_proof}
 
 \begin{my_proof}
-	\textbf{Proof of Proposition~\ref{prop:uniform}:}
+	\textbf{Proof of Proposition~\ref{prop:closed_form_bounds}:}
 	For any given $s(x)=\alpha^\top K_{Xx}$, we have 
 	\begin{align}\notag
 		\vert f^\star(x) -s(x)\vert =& \, \vert f^\star(x) -\tilde{s}(x) + \tilde{s}(x)-s(x)\vert \\
@@ -823,3 +1123,13 @@ The column vector $f_X$ is made of function evaluations $f(x_i)$, which are repe
 	where $\tilde{\Delta}$ represents \eqref{eq:dualdelt} without the constant term.
 \end{my_proof}
 
+\begin{my_proof}
+	\textbf{Proof of Proposition~\ref{prop.SRS}:}
+	%From construction, we know that $\mathcal{X}_t (x_0,u_0,\dots,u_{t-1}) \ni f()$ for any $t$. If the previous KPC iteration was feasible, then also $\mathcal{X}_{t+1} (x_{-1},u_{-1},u_0,\dots,u_{t-1}) \ni x_t$, where $x_{-1}$ and $u_{-1}$ are past closed-loop data. Considering a total of $N$ previous consecutive feasible KPC iterations yields a total of $N$ set conditions for $x_1$, $N-1$ set conditions for $x_2$, $\dots$, $2$ set conditions for $x_{N-1}$, and $1$ set condition for $x_N$. The states are therefore contained in the intersection of all their associated sets and, thus, enforcing the relaxed constraints suffices to ensure constraint satisfaction.
+	From construction, we know that $\mathcal{X}_t (x_0,u_0^\star,\dots,u_{t-1}^\star) \ni f(\dots f(f(x_0,u_0^\star),\dots),u_{t-1}^\star)$ for any $t$. If the previous KPC iteration was feasible, then  $\mathcal{X}_{t+1} (x_{-1},u_{-1},u_0^\star,\dots,u_{t-1}^\star)$ also contains the same point, where $x_{-1}$ and $u_{-1}$ are past closed-loop data. Considering a total of $N-1$ previous consecutive feasible KPC iterations yields a total of $N$ set conditions for $f(x_0,u_0^\star)$, $N-1$ set conditions for $f(x_0,u_0^\star,u_1^\star)$, $\dots$, and $1$ set condition for $f(\dots f(f(x_0,u_0^\star),u_1^\star),\dots,u_{N-1}^\star)$. At any time $t=1,\dots,N$, the true system state is therefore contained in the intersection of the associated sets and, hence, enforcing the relaxed constraints suffices to enforce constraint satisfaction.
+\end{my_proof} 
+
+\begin{my_proof}
+	\textbf{Proof of Proposition~\ref{prop.norms_mismatch}:}
+	It follows from expanding $\Vert s_n \Vert_\rkhs^2$ and $\Vert \tilde s_n \Vert_\rkhs^2$.
+\end{my_proof}
