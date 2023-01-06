@@ -3,9 +3,6 @@ font_family = 'lmodern'
 axes_size = 8
 axes_width = 0.8
 
-
-
-
 fig_params = {'figure.figsize' : (2.6, 1.5),
               'text.usetex' : True,
               'font.size' : font_size,

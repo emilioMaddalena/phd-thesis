@@ -1,30 +1,102 @@
 \cleardoublepage
-\chapter{Experimenting with Gaussian processes}
-\markboth{Experimenting with Gaussian processes}{Experimenting with Gaussian processes}
+\chapter{Building temperature control through Gaussian process and Model Predictive Control}
+\markboth{Building temperature control through Gaussian process and Model Predictive Control}{Building temperature control through Gaussian process and Model Predictive Control}
 
-In this chapter, we discuss the problem of learning and elucidate what viewpoint will be taken to tackle it. Next, novel results are presented concerning uncertainty estimation in a kernelized setting. Finally, some examples are given to illustrate the general use of the theory.
+Bla bla bla... to be written
 
-\section{The control problem}
+\section{A brief overview of Gaussian process}
+
+Gaussian processes (GPs) lie in the class of non-parametric Bayesian models. Whereas one can easily and intuitively explain GPs in a regression setting by making use of a few normal distribution properties, they also constitute a large and still active research field on their own.
+%On one hand, they can be easily explained in a regression setting under Gaussian noise as some elementary normal distribution properties suffice to derive in closed-form their main expressions. On the other had, surprisingly, they also constitute a research area on their own as they can be viewed, explored and modified in countless ways. 
+One classical GP reference is the acclaimed book \cite{williams2006gaussian}, which covers most of the basic concepts. Complementary views on the subject are offered by the texts \cite{gramacy2020surrogates} and \cite{kanagawa2018gaussian}.
+%The review article \cite{kanagawa2018gaussian} builds a solid bridge between the statistical and the deterministic approaches to kernel learning. 
+Two prominent lines of research that have remained active during the last decades are scaling Gaussian processes to large datasets \citep{ferrari1998finite,quinonero2005unifying,yang2012nystrom,bauer2016understanding,bui2017unifying,lederer2021gaussian}, and incorporating online data into the models without the need to retrain them from scratch \citep{csato2002sparse,bui2017streaming,maddox2021conditioning}. The control community, among others, has also been making use of Gaussian processes for some years (see \cite{liu2018gaussian} for an informative tutorial). Early investigations include \cite{kocijan2003predictive,hansen2005nonparametric} and among more recent ones one has \cite{diwale2014optimization,hewing2019cautious,lederer2022cooperative,khosravi2022safety}. In the cited applied works, GPs are preferred over alternative modeling strategies mainly thanks to their uncertainty quantification feature.
+
+%\footnote{Despite the name, non-parametric models still have internal \textit{hyperparameters} to be tuned. Although subtle, this difference has significant practical implications \cite{williams2006gaussian}.}, non-linear, Bayesian models. For a thorough presentation of the topic, we refer the reader to \cite{williams2006gaussian,duvenaud2014automatic}. Their main appeal over other types of statistical modeling paradigms is the analytical tractability, whereby expressions used during training and prediction have closed forms, dispensing with the need of using sample-based approximation techniques (see for example \cite{chong2017comparison,chong2019continuous}). 
+
+Our goal here is not to thoroughly discuss the topic of Gaussian processes, but simply to touch on the basics and understand how they were used to tackle this particular building temperature control problem.
+
+Assume one wants to model a given scalar phenomenon $f(x)$, which is known to depend on a set of variables $x$, and is given observations of the form $\{(\mathbf{x}_i,\mathsf{y}_i)\}_{i=1}^d$ with $\mathsf{y}_i = f(\mathbf{x}_i) + \varepsilon$, for some random $\varepsilon$. For convenience, denote by $\mathbf{X}$ the collection of all inputs $\mathbf{x}_i$, by $\mathbf{y}$ the collection of all outputs $\mathsf{y}_i$ and by $\mathbf{f}$ the (unobserved) collection of all noise-free function evaluations at the inputs $f(\mathbf{x}_i)$.
+
+The Gaussian process approach to crafting models consists in placing a multivariate normal \textit{prior} distribution over $\mathbf{f}$, that is
+\begin{equation}
+	\label{eq.prior}
+	p(\mathbf{f} | \mathbf{X}) = \mathcal{N}(m_\mathbf{X}, K_{\mathbf{X}\mathbf{X}})
+\end{equation}
+where $m_\mathbf{X}$ is a vector and $K_{\mathbf{X}\mathbf{X}}$ is a positive definite matrix, both of appropriate dimensions. The vector $m_\mathbf{X}$ has $m(\mathbf{x}_i)$ at its $i$th component, for some mean function $m$, and the matrix $K_{\mathbf{X}\mathbf{X}}$ has $k(\mathbf{x}_i, \mathbf{x}_j)$ at its $i$th row and $j$th column, for some positive definite kernel function $k$.
+
+Next, an assumption is made on the nature of $\varepsilon$, the most common one being $\varepsilon \sim \mathcal{N}(0,\sigma^2)$. This zero-mean, fixed variance assumption on the noise distribution guarantees that the subsequent steps all have closed-form solutions thanks to Gaussian distributions being closed under the operations that need to be performed\footnote{The noise is said to be heteroscedastic if its variance depends on another random variable under study, e.g., if it varies across the $x$ space. GPs under heteroscedastic noise are, in general, not analytically tractable (see for example \cite{goldberg1997regression,binois2018practical}).}. Thanks to the measurement model $\mathsf{y}_i = f(\mathbf{x}_i) + \varepsilon$, we then have the distribution $p(\mathbf{y}|\mathbf{f},\mathbf{X}) = \mathcal{N}(\mathbf{f}, \sigma^2 I )$, known as the \textit{likelihood}\footnote{Not to be confused with the marginal likelihood, which is often used as a training objective.}.
+
+By using Bayes theorem, it is possible to show that the \textit{posterior} distribution of a new value $f_*$ located at a new input $x_*$ is  \citep[§2.2]{williams2006gaussian}
+\begin{equation}
+\label{eq.posterior}
+\begin{aligned}
+	p(f_* | x_*, \mathbf{y}, \mathbf{X}) = \mathcal{N}( &m(x_*) + K_{x_*\mathbf{X}} (K_{\mathbf{X}\mathbf{X}} + \sigma^2 I)^{-1} (y-m_\mathbf{X}),	\\
+	&k(x_*,x_*) + K_{x_*\mathbf{X}} (K_{\mathbf{X}\mathbf{X}} + \sigma^2 I)^{-1} K_{\mathbf{X}x_*})
+\end{aligned}
+\end{equation}
+where $K_{\mathbf{X}x_*}$ is a column vector with $k(\mathbf{x}_i,x_*)$ at its $i$th position and $K_{x_*\mathbf{X}}$ denotes its transpose. Finally, \eqref{eq.posterior} can be used to make predictions with the model.
+
+Most models, including the Gaussian process class, feature internal parameters that need to be adjusted, fit, to the data at hand. This is crucial to achieving good performance. In \eqref{eq.prior} and \eqref{eq.posterior}, the constants to be calibrated are the ones internal to the mean function $m(x)$, the kernel function $k(x,x)$ and the noise strength $\sigma^2$. Denote the ensemble of all those constants by $\Theta$. One widely adopted approach to solving this calibration problem is maximizing the model marginal likelihood, that is, the quantity $p(\mathbf{y} | \mathbf{X})$. Intuitively, this can be thought of as finding the model that would lead to the available dataset having come from it with the highest likelihood. As it turns out, it is more convenient not to directly optimize $p(\mathbf{y} | \mathbf{X})$, but its logarithm instead, so we define $\mathcal{L} := \log p(\mathbf{y} | \mathbf{X})$, which can be shown to be \citep[§2.3]{williams2006gaussian}
+\begin{equation}
+	\label{eq.max_likelihood_obj}
+	\mathcal{L} = -\frac{1}{2} (\mathbf{y}-m_\mathbf{X})^\top (K_{\mathbf{X}\mathbf{X}} + \sigma^2 I)^{-1} (\mathbf{y}-m_\mathbf{X}) -\frac{1}{2} \log \det (K_{\mathbf{X}\mathbf{X}} + \sigma^2 I) -\frac{d}{2} \log (2 \pi)
+\end{equation}
+and solve the problem $\Theta^\star := \text{arg} \,\max_\Theta \mathcal{L}(\Theta)$ to find the most suitable set of parameters for our GP model. Notice how this amounts to solving a non-convex but typically smooth optimization problem to local optimality. This procedure is widely known as maximum likelihood estimation (MLE).
+
+In the applied sciences, users may abstract most of the above concepts and think of GPs in a more pragmatic way. They can define the (posterior) mean and variance functions respectively as
+\begin{align}
+	\mu(x) &:= m(x) + K_{x\mathbf{X}} (K_{\mathbf{X}\mathbf{X}} + \sigma^2 I)^{-1} (y-m_\mathbf{X}) \label{eq.gp_mean}\\
+	\text{var}(x) &:= k(x,x) + K_{x\mathbf{X}} (K_{\mathbf{X}\mathbf{X}} + \sigma^2 I)^{-1} K_{\mathbf{X}x} \label{eq.gp_variance}
+\end{align}
+and simply make use of the first expression to make predictions, indeed the most likely ones, and the second as uncertainty level around the nominal point predictions. It should be underlined that there is a significant cost associated with \eqref{eq.gp_mean} and \eqref{eq.gp_variance}, which mainly stems from the inverse of a $d \times d$ matrix. A second point that cannot be overlooked is the numerical stability of this operation: if two inputs $\mathbf{x}_i$ and $\mathbf{x}_j$ are too close to each other problems might arise despite the presence of the diagonal term $\sigma^2 I$. Both these issues have to be taken into account in practical scenarios to guarantee the feasibility of this model class. 
+
+%Assume one wants to model a given phenomenon $f(x)$ through noisy observations of the form $y = f(x) + \varepsilon$, where $\varepsilon \sim \mathcal{N}(0,\sigma^2_\varepsilon)$ is a zero-mean Gaussian noise of unknown variance. As per the usual Bayesian approach, we define a \textit{prior} model $f(x) \sim \mathcal{N}(m(x),k(x,x))$ and, after gathering some experimental data $D= \{x_n,y_n\}_{n=1}^N$, it is possible to update our beliefs and form a \textit{posterior} model whose point-wise mean and variance are respectively
+%\begin{subequations}
+%	\begin{align}
+%		\mu(x) &= m(x) + k_X(x)^\top (K+\sigma^2_{\varepsilon}I)^{-1}(y-m_X) \label{eq.GPmean}\\
+%		\text{var}(x) &= k(x,x) - k_X(x)^\top (K+\sigma^2_{\varepsilon}I)^{-1} k_X(x) \label{eq.GPvar}
+%	\end{align}
+%\end{subequations}
+%where $X$ and $y$ denote the collection of all data features and labels in the dataset $D$, and $k(x,x')$ is the kernel function. $k_{X}(x)$ and $K$ are respectively a column vector and a square matrix of kernel evaluations at $X$ and $x$. Lastly, $I$ represents the identity matrix.
+
+\begin{figure}[!b]
+	\centering
+	\includegraphics{../images/chap3_ex_gp_A.pdf} \hspace{3pt}
+	\includegraphics{../images/chap3_ex_gp_B.pdf} \hspace{3pt}
+	\includegraphics{../images/chap3_ex_gp_C.pdf} 
+	\caption{A Gaussian process regression example. The ground-truth (left),  Gaussian process mean and the 3$\sigma$ confidence interval for a model with log marginal likelihood $\mathcal{L}=-29.8$ (middle) and $\mathcal{L}=-48.5$ (right).}
+	\label{fig.chap3_gp_ex}
+\end{figure}
+
+An example of univariate Gaussian process regression is shown in Figure~\ref{fig.chap3_gp_ex}. The ground truth is a shifted Gramacy and Lee function $f(x) = \frac{\sin(10 \pi x)}{2x} + (x-1)^4 + 1$ from which 60 points were sampled with $\sigma \sim \mathcal{N}(0,0.15^2)$. The rational quadratic kernel was chosen to parametrize the GP covariance and the hyperparameters were tuned through MLE. The \texttt{GPflow} package \citep{matthews2017gpflow} was used in the numerical experiment and the objective was optimized through a BFGS method. In the figure, two distinct GP models are depicted, which were attained by means of MLE and BFGS under the same numerical tolerance and maximum number of iterations, but with different hyperparameter initial guesses. This illustrates how arriving at a favorable GPmodel through MLE requires escaping local maxima.
+
+Up to this point, only ``static'' functions have been addressed and the GP modelling dynamical systems was not touched on. If the system under study is described by the familiar equations $x_{t+1} = f(x_t,u_t) + \epsilon$, $y_{t} = g(x_t) + \nu$ and the unknown $f$ is to be modelled from output data $y_t$ only, then the problem is difficult.  More precisely, even if $g$ is assumed linear and known, finding a closed-form posterior expression for $f$ is in general intractable and approximation schemes have to be used (e.g. variational inference or Markov-Chain Monte Carlo methods) \citep{turner2010state}. Tuning the hyperparameters in this so-called Gaussian process state-space model (GPSSM) setting is another non straightforward step \citep{eleftheriadis2017identification}. The control community has been working on making GPSSM computationally more efficient \citep{berntorp2021online} and even on understanding the properties of the learned dynamics \citep{beckers2016stability}, however an alternative approach exists that circumvents some of the aforementioned difficulties under an additional assumption. The method lies in modelling the unknown dynamics in an auto-regressive form and utilizing feature selection techniques and expert knowledge to decide on which signals and how many past samples to include, i.e., deciding what the regression vector should be. In such case, building a GP model for $x_{t+1} = f(x_t,u_t) + \epsilon$ reduces to learning a static map again as one would be assuming that full state measurement is possible. This was the direction taken in this investigation.
+
+%In order to design dynamic models for the room temperatures, we used an auto-regressive approach, meaning that future predictions of a signal depend on the current and past values of itself as well as on current and past values of other relevant quantities. Since there were three temperatures to predict, three distinct models were trained and, so as to avoid augmenting the Gaussian process with unnecessary features, we made use of domain knowledge. Rooms that are not neighbors do not directly influence each other's temperatures; similarly, changing the valve position of AHU~1 has no effect on any temperature besides $T_1$. Initially, all exogenous signals $T_\text{sup}$, $T_\text{out}$ and $R_\text{sol}$ had been included into all models to boost their prediction capabilities. Nevertheless, we later realized that $R_\text{sol}$ was a significant covariate only for $T_3$ as discussed in Section~\ref{sec.ModelTrainingAndTesting}. Field tests unveiled a high correlation between the MPC computation times over the day and the solar radiation curve. Since having predictable rather than fluctuating solve times was a project requirement, we decided not to employ $R_\text{sol}$ as a feature in any GP. The definitive set of employed features is reported in Table~\ref{tab.features}, where the delay parameter $l$ indicates the number of current plus past values used from that particular physical signal. By using the mean functions \eqref{eq.GPmean} to evolve the temperature dynamics, we arrive at the final models
+%\begin{subequations}
+%	\begin{align}
+%		T_{1,t+1} &= \mu_{1}(T_{1,t}, T_{1,t-1}, T_{2,t}, \theta_{1,t},T_{\text{sup},t},T_{\text{out},t}) \\
+%		T_{2,t+1} &= \mu_{2}(T_{1,t}, T_{2,t}, T_{2,t-1}, T_{3,t}, \theta_{2,t},T_{\text{sup},t},T_{\text{out},t}) \\
+%		T_{3,t+1} &= \mu_{3}(T_{2,t}, T_{3,t}, T_{3,t-1}, \theta_{3,t},T_{\text{sup},t},T_{\text{out},t}) 
+%	\end{align}
+%	\label{eq.GPmodels}
+%\end{subequations}
+%Concerning the variances \eqref{eq.GPvar}, we opted for not propagating them forward in time since no closed-form expression exists to accomplish this. Instead, the expression \eqref{eq.GPvar} was evaluated in a point-wise fashion to measure uncertainty. The interested reader is referred to \cite{girard2004approximate,mchutchon2011gaussian} for insightful discussions on the matter.
 
 \section{The building and its HVAC system}
 
-The building considered in this study was a surgery center situated in the São Julião hospital complex, in the city of Campo Grande, MS, Brazil (Figure~\ref{fig.facadeAndRooms}, left). The 51 rooms that compose it are in permanent use and, for information purposes, 528 surgical procedures were carried out in it during August 2021. We were concerned with three thermal zones in its ophthalmology section: two operating rooms (ORs) and one waiting room (WR), all located on the West end of the building (Figure~\ref{fig.facadeAndRooms}, right). Whereas the former rooms are only connected to the waiting room, the latter has a door to the rest of the surgery center. Opaque glass bricks are present in the waiting room as can be seen in the picture, allowing some natural light to enter the space; the operating rooms on the other hand do not feature them, nor do they have any windows. All spaces have exterior walls, but the right-hand side operating room is significantly more affected by direct solar radiation due to the disposition of the nearby trees.
-
-A forced-air HVAC plant is in place to provide the occupants with a suitable indoor climate in accordance with local regulations. A total of seven air-handling units (AHUs) collect outdoor air that is then treated and filtered before being pumped into the several indoor spaces. We had control only over three AHUs, one for each aforementioned thermal zone. A central chiller connected to an external cooling tower provides chilled water to all AHUs, which in turn feature three-way valves to control the flow of water through their cooling coils. The AHU fans are operated always at constant speed, resulting in a constant volumetric flow through the air-ducts and into the zones. As per the regulations, no air recycling is possible and all return air is directly discharged into the atmosphere. As the temperature in Campo Grande is typically high, the HVAC system was conceived to only cool the space, not having the means to provide positive thermal energy (for more details, see Section~\ref{sec.controlProb}).
-
-Two distinct sensor networks were deployed to monitor the HVAC plant and the indoor spaces. Firstly, we will describe the one located in the AHU room. One local controller (LCO)--a National Instruments myRIO--was attached to each air-handling unit, reading all sensors used to monitor the AHUs: supply and return water temperature probes, a water flow meter, an anemometer, as well as an angular position sensor. The LCOs were moreover responsible for running low-level signal processing routines and implementing control actions, i.e., acting on the three-way valve servomotor to change the chilled water flow, hence influencing the supply air temperature. Photos of the AHU room are shown in Figure~\ref{fig.ahuRoom}. Next, in order to measure the indoor temperatures in a flexible way, a wireless network of Z-wave sensors was set up in the operating rooms and waiting room. These were equipped with external temperature probes (Dallas DS18B20) to guarantee fast and precise readings, reporting their measurements periodically to a local computer (LC) that featured a Z-wave transceiver attached to it.
-
+The building considered in this study was a surgery center situated in the São Julião hospital complex, in the city of Campo Grande, MS, Brazil (Figure~\ref{fig.facadeAndRooms}, top). The 51 rooms that compose it are in permanent use and, for information purposes, 528 surgical procedures were carried out in it during August 2021. We were concerned with three thermal zones in its ophthalmology section: two operating rooms (ORs) and one waiting room (WR), all located on the West end of the building (Figure~\ref{fig.facadeAndRooms}, bottom). Whereas the former rooms are only connected to the waiting room, the latter has a door to the rest of the surgery center. Opaque glass bricks are present in the waiting room as can be seen in the picture, allowing some natural light to enter the space; the operating rooms on the other hand do not feature them, nor do they have any windows. All spaces have exterior walls, but the right-hand side operating room is significantly more affected by direct solar radiation due to the disposition of the nearby trees.
 
 \begin{figure}[!t]
 	\centering
 	\includegraphics[width=0.9\linewidth]{../images/chap3_facade.jpg} \\[8pt]
 	\includegraphics[width=0.9\linewidth]{../images/chap3_rooms.jpg} 
-	\caption{Photos of the AHU room depicting the air ducts (top), the supply and return water pipes (top and bottom), and the three-way valve servomotor (bottom).}
-	\label{fig.ahuRoom}
+	\caption{The facade of the Hospital São Julião surgery center, situated in Campo Grande, MS, Brazil (top). The three thermal zones considered in this study (bottom): The waiting room and the doors that lead to the two operating rooms, all in the ophthalmology section of the building, located on its West end.}
+	\label{fig.facadeAndRooms}
 \end{figure}
 
-%They periodically report they samples to a 2.66~GHz Mac Mini equipped with a Z-wave USB transceiver that was installed in the waiting room. This local computer (LC) acted as the main computing platform for the project, gathering data from all sources, hosting a local database, and running all the real-time optimization algorithms.
-{\tiny }A 3~GHz, 16 GB RAM, core i7 machine was installed in the waiting room, acting as the main computer platform for the project, i.e., the LC. This computer and the AHU LCOs were all connected to a local area network to exchange information, which was done by using the UDP protocol at a rate of approximately 1~Hz. Lastly, a weather station was deployed on site to measure the outdoor temperature and the solar radiation acting on the building with high accuracy. All signals were sampled with a period of two mins and stored into a local time-series database, InfluxDB. A block-diagram of the complete system is depicted in Figure~\ref{fig.blockDiagram}.  
+A forced-air cooling plant is in place to provide the occupants with a suitable indoor climate in accordance with local regulations. A total of seven air-handling units (AHUs) collect outdoor air that is then treated and filtered before being pumped into the several indoor spaces. We had control only over three AHUs, one for each aforementioned thermal zone. A central chiller connected to an external cooling tower provides chilled water to all AHUs, which in turn feature three-way valves to control the flow of water through their cooling coils. The AHU fans are operated always at constant speed, resulting in a constant volumetric flow through the air-ducts and into the zones. As per the regulations, no air recycling is possible and all return air is directly discharged into the atmosphere. As the temperature in Campo Grande is typically high, the HVAC system was conceived to only cool the space, not having the means to provide positive thermal energy (for more details, see Section~\ref{sec.controlProb}).
 
 \begin{figure}[!t]
 	\centering
@@ -33,6 +105,12 @@ Two distinct sensor networks were deployed to monitor the HVAC plant and the ind
 	\caption{Photos of the AHU room depicting the air ducts (top), the supply and return water pipes (top and bottom), and the three-way valve servomotor (bottom).}
 	\label{fig.ahuRoom}
 \end{figure}
+
+Two distinct sensor networks were deployed to monitor the HVAC plant and the indoor spaces. Firstly, we will describe the one located in the AHU room. One local controller (LCO)--a National Instruments myRIO--was attached to each air-handling unit to read all sensors and monitor the AHUs: supply and return water temperature probes, a water flow meter, an anemometer, as well as an angular position sensor. The LCOs were moreover responsible for running low-level signal processing routines and implementing control actions, i.e., acting on the three-way valve servomotor to change the chilled water flow, hence influencing the supply air temperature. Photos of the AHU room are shown in Figure~\ref{fig.ahuRoom}. Next, in order to measure the indoor temperatures in a flexible way, a wireless network of Z-wave sensors was set up in the operating rooms and waiting room. These were equipped with external temperature probes (Dallas DS18B20) to guarantee fast and precise readings, reporting their measurements periodically to a local computer (LC) that featured a Z-wave transceiver attached to it.
+
+%They periodically report they samples to a 2.66~GHz Mac Mini equipped with a Z-wave USB transceiver that was installed in the waiting room. This local computer (LC) acted as the main computing platform for the project, gathering data from all sources, hosting a local database, and running all the real-time optimization algorithms.
+{\tiny }A 3~GHz, 16 GB RAM, core i7 machine was installed in the waiting room, acting as the main computer platform for the project, i.e., the LC. This computer and the AHU LCOs were all connected to a local area network to exchange information, which was done by using the UDP protocol at a rate of approximately 1~Hz. Lastly, a weather station was deployed on site to measure the outdoor temperature and the solar radiation acting on the building with high accuracy. All signals were sampled with a period of two mins and stored into a local time-series database, InfluxDB. A block-diagram of the complete system is depicted in Figure~\ref{fig.blockDiagram}.  
+
 
 
 \subsection{Analysis of the control problem}
@@ -72,36 +150,6 @@ Several disturbances both of internal and external nature act on the system. The
 \end{table}
 
 Creating a reliable model for the system dynamics is crucial to attain high-performance with Model Predictive Control. In the current setting, this task is not trivial as certain disturbances and control variables enter the dynamics non-linearly. For instance, the globe water valves in the AHUs are not linear actuators in that the flow is not directly proportional to the angular position. For this reason, we decided to adopt a flexible class of statistical models to tackle the modeling problem while requiring as little expert knowledge as possible. Their main advantage being that this class not only predicts the expected system behavior, but also quantifies the uncertainty associated with its predictions, hence allowing for a more robust, risk-aware operation.
-
-\subsection{Crafting Gaussian process dynamical models}
-
-Gaussian processes lie in the class of non-parametric\footnote{Despite the name, non-parametric models still have internal \textit{hyperparameters} to be tuned. Although subtle, this difference has significant practical implications \cite{williams2006gaussian}.}, non-linear, Bayesian models. For a thorough presentation of the topic, we refer the reader to \cite{williams2006gaussian,duvenaud2014automatic}. Their main appeal over other types of statistical modeling paradigms is the analytical tractability, whereby expressions used during training and prediction have closed forms, dispensing with the need of using sample-based approximation techniques (see for example \cite{chong2017comparison,chong2019continuous}). 
-Assume one wants to model a given phenomenon $f(x)$ through noisy observations of the form $y = f(x) + \varepsilon$, where $\varepsilon \sim \mathcal{N}(0,\sigma^2_\varepsilon)$ is a zero-mean Gaussian noise of unknown variance. As per the usual Bayesian approach, we define a \textit{prior} model $f(x) \sim \mathcal{N}(m(x),k(x,x))$ and, after gathering some experimental data $D= \{x_n,y_n\}_{n=1}^N$, it is possible to update our beliefs and form a \textit{posterior} model whose point-wise mean and variance are respectively
-\begin{subequations}
-	\begin{align}
-		\mu(x) &= m(x) + k_X(x)^\top (K+\sigma^2_{\varepsilon}I)^{-1}(y-m_X) \label{eq.GPmean}\\
-		\text{var}(x) &= k(x,x) - k_X(x)^\top (K+\sigma^2_{\varepsilon}I)^{-1} k_X(x) \label{eq.GPvar}
-	\end{align}
-\end{subequations}
-where $X$ and $y$ denote the collection of all data features and labels in the dataset $D$, and $k(x,x')$ is the kernel function. $k_{X}(x)$ and $K$ are respectively a column vector and a square matrix of kernel evaluations at $X$ and $x$. Lastly, $I$ represents the identity matrix.
-
-Fully specifying a GP regression model amounts to i) picking a suitable mean function and a suitable non-linearity, i.e., a kernel function $k(x,x)$; and ii) optimizing all model hyperparameters. In our case study, a linear mean $m(x) = Ax + b$ was employed. Among the many kernel maps available in the literature \cite{duvenaud2014automatic}, we chose the anisotropic squared-exponential function, a very popular alternative due to its smoothness and expressive power \cite{lederer2021impact,van2021learning}. This kernel has the form 
-\begin{equation}
-	k_{\text{SE}}(x,x') = \sigma^2 \exp \left(-\frac{1}{2} \sum_{i=1}^d \left(\frac{x_i - x'_i}{\ell_i}\right)^2\right)
-	\label{eq.SEARD}
-\end{equation}
-where $x_i$ is the $i$th component of the feature vector $x$. In \eqref{eq.SEARD}, $\sigma$ is the so called vertical scale hyperparameter and $\ell_i$ are the horizontal scale (a.k.a. lengthscale) hyperparameters. As for optimizing the constants $A$, $b$, $\sigma$, $\sigma_\varepsilon$ and $\ell_i$, we made use of the log-marginal likelihood objective \cite[Chapter 5]{williams2006gaussian} and a gradient-based procedure. This is a widely adopted criterion, known to contain a regularization term that combats overfitting.
-
-In order to design dynamic models for the room temperatures, we used an auto-regressive approach, meaning that future predictions of a signal depend on the current and past values of itself as well as on current and past values of other relevant quantities. Since there were three temperatures to predict, three distinct models were trained and, so as to avoid augmenting the Gaussian process with unnecessary features, we made use of domain knowledge. Rooms that are not neighbors do not directly influence each other's temperatures; similarly, changing the valve position of AHU~1 has no effect on any temperature besides $T_1$. Initially, all exogenous signals $T_\text{sup}$, $T_\text{out}$ and $R_\text{sol}$ had been included into all models to boost their prediction capabilities. Nevertheless, we later realized that $R_\text{sol}$ was a significant covariate only for $T_3$ as discussed in Section~\ref{sec.ModelTrainingAndTesting}. Field tests unveiled a high correlation between the MPC computation times over the day and the solar radiation curve. Since having predictable rather than fluctuating solve times was a project requirement, we decided not to employ $R_\text{sol}$ as a feature in any GP. The definitive set of employed features is reported in Table~\ref{tab.features}, where the delay parameter $l$ indicates the number of current plus past values used from that particular physical signal. By using the mean functions \eqref{eq.GPmean} to evolve the temperature dynamics, we arrive at the final models
-\begin{subequations}
-	\begin{align}
-		T_{1,t+1} &= \mu_{1}(T_{1,t}, T_{1,t-1}, T_{2,t}, \theta_{1,t},T_{\text{sup},t},T_{\text{out},t}) \\
-		T_{2,t+1} &= \mu_{2}(T_{1,t}, T_{2,t}, T_{2,t-1}, T_{3,t}, \theta_{2,t},T_{\text{sup},t},T_{\text{out},t}) \\
-		T_{3,t+1} &= \mu_{3}(T_{2,t}, T_{3,t}, T_{3,t-1}, \theta_{3,t},T_{\text{sup},t},T_{\text{out},t}) 
-	\end{align}
-	\label{eq.GPmodels}
-\end{subequations}
-Concerning the variances \eqref{eq.GPvar}, we opted for not propagating them forward in time since no closed-form expression exists to accomplish this. Instead, the expression \eqref{eq.GPvar} was evaluated in a point-wise fashion to measure uncertainty. The interested reader is referred to \cite{girard2004approximate,mchutchon2011gaussian} for insightful discussions on the matter.
 
 \subsection{Model training and testing}
 \label{sec.ModelTrainingAndTesting}
