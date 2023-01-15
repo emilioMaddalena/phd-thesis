@@ -2,15 +2,18 @@
 \chapter{Building temperature control through Gaussian process and Model Predictive Control}
 \markboth{Building temperature control through Gaussian process and Model Predictive Control}{Building temperature control through Gaussian process and Model Predictive Control}
 
+\section{Introduction}
+
 Bla bla bla... to be written
 
 \section{A brief overview of Gaussian process}
+\label{sec.gps}
 
 Gaussian processes (GPs) lie in the class of non-parametric Bayesian models. Whereas one can easily and intuitively explain GPs in a regression setting by making use of a few normal distribution properties, they also constitute a large and still active research field on their own.
 %On one hand, they can be easily explained in a regression setting under Gaussian noise as some elementary normal distribution properties suffice to derive in closed-form their main expressions. On the other had, surprisingly, they also constitute a research area on their own as they can be viewed, explored and modified in countless ways. 
 One classical GP reference is the acclaimed book \cite{williams2006gaussian}, which covers most of the basic concepts. Complementary views on the subject are offered by the texts \cite{gramacy2020surrogates} and \cite{kanagawa2018gaussian}.
 %The review article \cite{kanagawa2018gaussian} builds a solid bridge between the statistical and the deterministic approaches to kernel learning. 
-Two prominent lines of research that have remained active during the last decades are scaling Gaussian processes to large datasets \citep{ferrari1998finite,quinonero2005unifying,yang2012nystrom,bauer2016understanding,bui2017unifying,lederer2021gaussian}, and incorporating online data into the models without the need to retrain them from scratch \citep{csato2002sparse,bui2017streaming,maddox2021conditioning}. The control community, among others, has also been making use of Gaussian processes for some years (see \cite{liu2018gaussian} for an informative tutorial). Early investigations include \cite{kocijan2003predictive,hansen2005nonparametric} and among more recent ones one has \cite{diwale2014optimization,hewing2019cautious,lederer2022cooperative,khosravi2022safety}. In the cited applied works, GPs are preferred over alternative modeling strategies mainly thanks to their uncertainty quantification feature.
+Two prominent lines of research that have remained active during the last decades are scaling Gaussian processes to large datasets \citep{ferrari1998finite,quinonero2005unifying,yang2012nystrom,bauer2016understanding,bui2017unifying,lederer2021gaussian}, and incorporating online data into the models without the need to retrain them from scratch \citep{csato2002sparse,bui2017streaming,maddox2021conditioning}. The control community, among others, has also been making use of Gaussian processes for some years (see \cite{liu2018gaussian} for an informative tutorial). Early investigations include \cite{kocijan2003predictive,hansen2005nonparametric} and among more recent ones one has \cite{diwale2014optimization,hewing2019cautious,lederer2022cooperative,khosravi2022safety}. In the cited applied works, GPs are preferred over alternative modeling strategies mainly thanks to their uncertainty quantification feature. 
 
 %\footnote{Despite the name, non-parametric models still have internal \textit{hyperparameters} to be tuned. Although subtle, this difference has significant practical implications \cite{williams2006gaussian}.}, non-linear, Bayesian models. For a thorough presentation of the topic, we refer the reader to \cite{williams2006gaussian,duvenaud2014automatic}. Their main appeal over other types of statistical modeling paradigms is the analytical tractability, whereby expressions used during training and prediction have closed forms, dispensing with the need of using sample-based approximation techniques (see for example \cite{chong2017comparison,chong2019continuous}). 
 
@@ -85,6 +88,7 @@ Up to this point, only ``static'' functions have been addressed and the GP model
 %Concerning the variances \eqref{eq.GPvar}, we opted for not propagating them forward in time since no closed-form expression exists to accomplish this. Instead, the expression \eqref{eq.GPvar} was evaluated in a point-wise fashion to measure uncertainty. The interested reader is referred to \cite{girard2004approximate,mchutchon2011gaussian} for insightful discussions on the matter.
 
 \section{The building and its HVAC system}
+\label{sec.building_and_hvac}
 
 The building considered in this study was a surgery center situated in the São Julião hospital complex, in the city of Campo Grande, MS, Brazil (Figure~\ref{fig.facadeAndRooms}, top). The 51 rooms that compose it are in permanent use and, for information purposes, 528 surgical procedures were carried out in it during August 2021. We were concerned with three thermal zones in its ophthalmology section: two operating rooms (ORs) and one waiting room (WR), all located on the West end of the building (Figure~\ref{fig.facadeAndRooms}, bottom). Whereas the former rooms are only connected to the waiting room, the latter has a door to the rest of the surgery center. Opaque glass bricks are present in the waiting room as can be seen in the picture, allowing some natural light to enter the space; the operating rooms on the other hand do not feature them, nor do they have any windows. All spaces have exterior walls, but the right-hand side operating room is significantly more affected by direct solar radiation due to the disposition of the nearby trees.
 
@@ -102,114 +106,152 @@ A forced-air cooling plant is in place to provide the occupants with a suitable 
 	\centering
 	\includegraphics[width=0.75\linewidth]{../images/chap3_ahus_b.jpg} \\[8pt]
 	\includegraphics[width=0.75\linewidth]{../images/chap3_ahus_a.jpg} 
-	\caption{Photos of the AHU room depicting the air ducts (top), the supply and return water pipes (top and bottom), and the three-way valve servomotor (bottom).}
+	\caption{Photos of the AHU room where one can identify the air ducts (top), the supply and return water pipes (top and bottom), and one of the three-way valve servomotors that control the flow of chilled water (bottom).}
 	\label{fig.ahuRoom}
 \end{figure}
 
 Two distinct sensor networks were deployed to monitor the HVAC plant and the indoor spaces. Firstly, we will describe the one located in the AHU room. One local controller (LCO)--a National Instruments myRIO--was attached to each air-handling unit to read all sensors and monitor the AHUs: supply and return water temperature probes, a water flow meter, an anemometer, as well as an angular position sensor. The LCOs were moreover responsible for running low-level signal processing routines and implementing control actions, i.e., acting on the three-way valve servomotor to change the chilled water flow, hence influencing the supply air temperature. Photos of the AHU room are shown in Figure~\ref{fig.ahuRoom}. Next, in order to measure the indoor temperatures in a flexible way, a wireless network of Z-wave sensors was set up in the operating rooms and waiting room. These were equipped with external temperature probes (Dallas DS18B20) to guarantee fast and precise readings, reporting their measurements periodically to a local computer (LC) that featured a Z-wave transceiver attached to it.
 
 %They periodically report they samples to a 2.66~GHz Mac Mini equipped with a Z-wave USB transceiver that was installed in the waiting room. This local computer (LC) acted as the main computing platform for the project, gathering data from all sources, hosting a local database, and running all the real-time optimization algorithms.
-{\tiny }A 3~GHz, 16 GB RAM, core i7 machine was installed in the waiting room, acting as the main computer platform for the project, i.e., the LC. This computer and the AHU LCOs were all connected to a local area network to exchange information, which was done by using the UDP protocol at a rate of approximately 1~Hz. Lastly, a weather station was deployed on site to measure the outdoor temperature and the solar radiation acting on the building with high accuracy. All signals were sampled with a period of two mins and stored into a local time-series database, InfluxDB. A block-diagram of the complete system is depicted in Figure~\ref{fig.blockDiagram}.  
+The LC was a 3~GHz, 16 GB RAM, core i7 machine installed in the waiting room and acting as the main computer platform for the project. This computer and the AHU LCOs were all connected to a local area network (LAN) to exchange information, which was done by using the UDP protocol at a rate of 1~Hz. We highlight that this same LAN was used to send control signals from the LC to the LCOs in order to modulate the AHU valves. Lastly, a weather station was deployed on site to measure the outdoor temperature and the solar radiation acting on the building with high accuracy. All signals were sampled with a period of two minutes and stored into a local time-series database, InfluxDB. A block-diagram of the complete system is depicted in Figure~\ref{fig.blockDiagram}.  
 
-
+\begin{figure}[!t]
+	\centering
+	\includegraphics[width=0.75\linewidth]{../images/chap3_sys_arch_diagram.pdf}
+	\caption{The overall system architecture, including the three air-handling units (AHUs) and their local controllers (LCOs). Information is exchanged between the LCOs and the local computer (LC) through a local area network (LAN).}
+	\label{fig.blockDiagram}
+\end{figure}
 
 \subsection{Analysis of the control problem}
 \label{sec.controlProb}
 
-The control goal is to regulate the indoor temperature within the three zones ($T_i$, $i=1,2,3$), keeping it always below a pre-specified value $T_{\text{max}}$. Although defining two-level temperature envelopes is common for residences and offices (see e.g. \cite{fiorentini2017hybrid,lian2021adaptive}), some employees still make use of the surgery center spaces during nighttime and, thus, the indoor temperature has to stay below $T_{\text{max}}$ even then. Furthermore, this is to be done while minimizing the chiller energy consumption as dictated by its coefficient of performance (COP) curve and the building thermal load. The controlled variables are the angular positions of each AHU three-way valve ($\theta_i$, $i=1,2,3$) that regulate the flow of water across their cooling coils. Naturally, these quantities are physically limited between a minimum $\theta_\text{min}$ and a maximum value $\theta_\text{max}$.
+The control goal was to regulate the indoor temperature within the three zones ($T_i$, $i=1,2,3$), keeping it below a pre-specified value $T_{\text{max}}$ at all times. Although defining two-level temperature envelopes that have relaxed constraints at night is common for residences and offices, some employees still made use of the surgery center spaces during nighttime and, thus, the indoor temperature has to stay below $T_{\text{max}}$ even then. Furthermore, this was to be done while minimizing the chiller energy consumption, which is a function of its coefficient of performance (COP) curve and the building thermal load. 
 
-Several disturbances both of internal and external nature act on the system. The measured ones include the outdoor temperature $T_\text{out}$, the solar radiation $R_\text{sol}$, and the temperature of the water supplied by the chiller to the AHUs $T_\text{sup}$. The variables $T_\text{out}$ and $R_\text{sol}$ directly affect the indoor climate by heating the external walls. $T_\text{out}$ and $T_\text{sup}$ can be regarded as an input disturbance; indeed, these quantities define the HVAC system actuation capabilities along with the valve positions $\theta_i$. The unmeasured disturbances are the internal heat gains generated by occupants and equipment, as well as the eventual opening and closing of doors that lead to air mix among rooms. A summary of the relevant control information described here can be found in Table~\ref{tab.controlInformation}.
+The controlled variables are the angular positions of each AHU three-way valve ($\theta_i$, $i=1,2,3$) that regulate the flow of water across their cooling coils. Naturally, these quantities are physically limited between a minimum $\theta_\text{min}$ and a maximum value $\theta_\text{max}$. Several disturbances both of internal and external nature act on the system. The measured ones include the outdoor temperature $T_\text{out}$, the solar radiation $R_\text{sol}$, and the temperature of the water supplied by the chiller to the AHUs, $T_\text{sup}$. The variables $T_\text{out}$ and $R_\text{sol}$ directly affect the indoor climate by heating the external walls. Also, both $T_\text{out}$ and $T_\text{sup}$ can be regarded as input disturbances; indeed, these quantities define the HVAC system actuation capabilities along with the valve positions $\theta_i$. The unmeasured disturbances are the internal heat gains generated by occupants and equipment, as well as the eventual opening and closing of doors that lead to air mix among rooms. A summary of the relevant control information described here can be found in Table~\ref{tab.controlInformation}.
 
-\begin{table*}[!ht]
+
+In order to operate optimally the industrial cooling system while minimizing the operational costs, we opted for designing and recursively solving a model-based finite-horizon optimal control problem. To craft dynamical models for the temperature evolution in the rooms and the AHU effects on them, we made use of the Gaussian process framework described in Section~\ref{sec.gps}.
+%ional to the angular position. For this reason, we decided to adopt a flexible class of statistical models to tackle the modeling problem while requiring as little expert knowledge as possible. Their main advantage being that this class not only predicts the expected system behavior, but also quantifies the uncertainty associated with its predictions, hence allowing for a more robust, risk-aware operation.
+
+\subsection{Data collection, model training and testing}
+\label{sec.ModelTrainingAndTesting}
+
+Aiming at capturing different weather conditions and a reasonable number of chiller states, a representative dataset was gathered from August to November 2021. The batch consisted of 22'455 points sampled at $T_\text{samp} = 2\,$ mins and comprised closed-loop operation with PI and rule-based controllers (RBCs), as well as a variety of open-loop excitation signals such as ramps and uniformly random inputs. The latter signals were mainly tested during weekends and Holidays to avoid disturbing occupants. After examining the obtained curves, we concluded that a control period of 10 mins would be a good compromise between operating the cooling system effectively and not oversampling the temperatures -- given that our model complexity grows with the size of the dataset, the latter aspect was rather important. The dataset was then downsampled by a factor of 5 times, resulting in 4'491 points, which corresponds to 748 hours. 
+
+A meticulous post-processing step was necessary next to ensure that unreliable periods were discarded. We highlight that this was not simply a matter of finding spurious outliers, but of identifying complete periods of time when the plant was not operating normally due to, for instance, a chiller fault, an unannounced maintenance in an AHU or even the manual closing of some air dampers by a technician. This process was carried out by jointly studying the obtained curves with the help of the local maintenance team. Finally, missing entries in the time-series were imputed using a simple linear interpolation scheme. Thanks to the reliability of the sensor networks shown in Section~\ref{sec.building_and_hvac}, only a small percentage of entries was not present. With the right set of data at hand, we proceeded to define and train one GP model for each room. 
+
+\begin{table}
 	\small
 	\centering
-	\begin{tabular}{l|c|c}
-		\hline & Symbols & Description \\\hline
-		Inputs & $\theta_\text{1}$, $\theta_\text{2}$, $\theta_\text{3}$ & Valve position of AHU 1, AHU 2 and AHU 3 \\
-		Outputs & $T_\text{1}$, $T_\text{2}$, $T_\text{3}$ & Temperatures within zone 1, zone 2 and zone 3 \\
-		Measured disturbances & $T_\text{sup}$, $T_\text{out}$, $R_\text{sol}$ & Chiller supply water temperature, outdoor temperature, solar radiation \\
-		Unmeasured disturbances & $-$ & Internal heat gains (e.g. occupants), opening and closing of the doors \\
-		\hline
-	\end{tabular}
 	\caption{The main physical quantities influencing the HVAC plant and the temperature dynamics inside the rooms.}
 	\label{tab.controlInformation}
-\end{table*}
+	\begin{tabular}{l c c} 
+		\cmidrule[.15em](l{\tabcolsep}r{\tabcolsep}){1-3}
+		& Symbols & Description \\
+		\cmidrule[.15em](l{\tabcolsep}r{\tabcolsep}){1-3}
+		Inputs & $\theta_\text{1}$, $\theta_\text{2}$, $\theta_\text{3}$ & \makecell{Valve position of AHU 1, \\ AHU 2 and AHU 3} \\
+		\cmidrule[.05em](l{\tabcolsep}r{\tabcolsep}){1-3}
+		Outputs & $T_\text{1}$, $T_\text{2}$, $T_\text{3}$ & \makecell{Temperatures within zone 1,  \\ zone 2 and zone 3} \\
+		\cmidrule[.05em](l{\tabcolsep}r{\tabcolsep}){1-3}
+		Measured disturbance & $T_\text{sup}$, $T_\text{out}$, $R_\text{sol}$ & \makecell{Chiller supply water temperature, \\ outdoor temperature, solar radiation} \\
+		\cmidrule[.05em](l{\tabcolsep}r{\tabcolsep}){1-3}
+		Unmeasured disturbance & $-$ & \makecell{Internal heat gains (e.g. occupants), \\ opening and closing of doors} \\
+		\cmidrule[.15em](l{\tabcolsep}r{\tabcolsep}){1-3}
+	\end{tabular}
+\end{table}
 
 \begin{table}[!t]
 	\small
 	\centering
-	\begin{tabular}{l|c|c|c|c|c|c|c|c}
-		\hline & $T_\text{1}$ & $T_\text{2}$ & $T_\text{3}$ & $\theta_\text{1}$ & $\theta_\text{2}$ & $\theta_\text{3}$ & $T_\text{sup}$ & $T_\text{out}$ \\\hline
+	\caption{Delays for each feature of the Gaussian process auto-regressive models. The symbol ``$-$'' indicates what signals were neglected.}
+	\begin{tabular}{l c c c c c c c c}
+		\cmidrule[.15em](l{\tabcolsep}r{\tabcolsep}){1-9}
+		& $T_\text{1}$ & $T_\text{2}$ & $T_\text{3}$ & $\theta_\text{1}$ & $\theta_\text{2}$ & $\theta_\text{3}$ & $T_\text{sup}$ & $T_\text{out}$ \\
+		\cmidrule[.15em](l{\tabcolsep}r{\tabcolsep}){1-9}
 		GP1 (OR 1) & 2 & 1 & $-$ & 1 & $-$ & $-$ & 1 & 1 \\
+		\cmidrule[.05em](l{\tabcolsep}r{\tabcolsep}){1-9}
 		GP2 (WR) & 1 & 2 & 1 & $-$ & 1 & $-$ & 1 & 1 \\
+		\cmidrule[.05em](l{\tabcolsep}r{\tabcolsep}){1-9}
 		GP3 (OR 2) & $-$ & 1 & 2 & $-$ & $-$ & 1 & 1 & 1 \\
-		\hline
+		\cmidrule[.15em](l{\tabcolsep}r{\tabcolsep}){1-9}
 	\end{tabular}
-	\caption{The signals that composed the feature vector of each Gaussian process, and their respective delay parameters $l$. The symbol ``$-$'' indicates what signals were neglected.}
 	\label{tab.features}
 \end{table}
 
-Creating a reliable model for the system dynamics is crucial to attain high-performance with Model Predictive Control. In the current setting, this task is not trivial as certain disturbances and control variables enter the dynamics non-linearly. For instance, the globe water valves in the AHUs are not linear actuators in that the flow is not directly proportional to the angular position. For this reason, we decided to adopt a flexible class of statistical models to tackle the modeling problem while requiring as little expert knowledge as possible. Their main advantage being that this class not only predicts the expected system behavior, but also quantifies the uncertainty associated with its predictions, hence allowing for a more robust, risk-aware operation.
+The process of designing GP models can be summarized in three steps: select suitable mean and covariance functions, define the feature vectors, and optimize the models hyperparameters. Among the many kernel maps available in the literature, we chose the anisotropic squared-exponential function, a very popular alternative due to its smoothness and expressive power. This kernel has the form
+\begin{equation}
+	k_{\text{SE}}(x,x') = \sigma^2 \exp \left(-\frac{1}{2} \sum_{i=1}^d \left(\frac{x_i - x'_i}{\ell_i}\right)^2\right)
+	\label{eq.SEARD}
+\end{equation}
+where $x_i$ is the $i$th component of the feature vector $x$. In \eqref{eq.SEARD}, $\sigma$ is the so called vertical scale hyperparameter and $\ell_i$ are the horizontal scale (a.k.a. lengthscale) hyperparameters. However, relying solely on \eqref{eq.SEARD} can be dangerous as the resulting GP model would not extrapolate well. For this reason, a linear mean function $m(x) = Ax + b$ was also employed, causing the Gaussian process to behave linearly when far away from the training data. As for optimizing the hyperparameters we made use of the log-marginal likelihood objective and the Broyden–Fletcher–Goldfarb–Shanno (BFGS) first-order algorithm. The development was carried out in \texttt{Python} with the aid of the \texttt{GPflow2} \citep{matthews2017gpflow} and the \texttt{SciPy} \citep{virtanen2020scipy} packages.
 
-\subsection{Model training and testing}
-\label{sec.ModelTrainingAndTesting}
+To model the temperature dynamics in the rooms, an auto-regressive structure was preferred over a state-space one (see discussion in Section~\ref{sec.gps}). In other words, future predictions of a signal depend on the current and past values of itself as well as on current and past values of other relevant quantities. Since there were three temperatures to predict, three distinct GPs were trained and, to avoid augmenting the Gaussian process with unnecessary features, we made use of domain knowledge. Rooms that are not neighbors do not directly influence each other's temperatures; similarly, changing the valve position of AHU~1 has no effect on any temperature besides $T_1$. Initially, all exogenous signals $T_\text{sup}$, $T_\text{out}$ and $R_\text{sol}$ had been included into all models to boost their prediction capabilities. Nevertheless, we later realized that $R_\text{sol}$ was a significant covariate only for $T_3$. Field tests also unveiled a high correlation between the MPC computation times over the day and the solar radiation curve. Since having consistent rather than fluctuating solve times was a project requirement, we decided not to employ $R_\text{sol}$ as a feature in any GP. The definitive set of features and signal delays is reported in Table~\ref{tab.features}. Finally, by using the mean functions \eqref{eq.GPmodels} to evolve the temperature dynamics, we arrive at the final models
+\begin{subequations}
+	\begin{align}
+		T_{1,t+1} &= \mu_{1}(T_{1,t}, T_{1,t-1}, T_{2,t}, \theta_{1,t},T_{\text{sup},t},T_{\text{out},t}) \\
+		T_{2,t+1} &= \mu_{2}(T_{1,t}, T_{2,t}, T_{2,t-1}, T_{3,t}, \theta_{2,t},T_{\text{sup},t},T_{\text{out},t}) \\
+		T_{3,t+1} &= \mu_{3}(T_{2,t}, T_{3,t}, T_{3,t-1}, \theta_{3,t},T_{\text{sup},t},T_{\text{out},t}) 
+	\end{align}
+	\label{eq.GPmodels}
+\end{subequations}
+Regarding the variances \eqref{eq.gp_variance}, those were used in a point-wise fashion to measure uncertainty. In other words, multi-step ahead predictions were performed by propagating only the mean values forward. The more complex alternative, which was discarded in this study, is to propagate also the higher-order moments and employ numerical methods to approximate the intractable integrals in the hope of arriving at more precise uncertainty estimates \citep{girard2004approximate,mchutchon2011gaussian}.
 
-Data collection was carried out from August to November 2021. The final batch consisted of 22,455 points sampled at $T_\text{samp} = 2\,$ mins and comprised closed-loop operation with PI and rule-based controllers (RBCs), as well as a variety of open-loop excitation signals such as ramps and uniformly random inputs. After examining the obtained curves, we concluded that a control period of 10 mins would be a good compromise between operating the HVAC system effectively and not oversampling the temperatures -- given that our model complexity grows with the size of the dataset, the latter aspect was rather important. The data batch was then downsampled by a factor of 5 times, resulting in 4491 points (748 hours). After that, a meticulous post-processing step was necessary to ensure that unreliable periods were discarded, outliers were detected and filtered, and imputation was performed to fill in certain missing entries. The feature vectors and labels were then created for each of the GPs described in Table~\ref{tab.features}, hence defining their training sets. In our particular case, all variables had similar ranges, thus normalization was not necessary. A critical step was to drop feature vectors that were too close to each other (in a Euclidean norm sense), which not only removed redundant information from the batch, but also improved the numerical stability associated with the kernel matrix \cite{williams2006gaussian}. Finally, the GPs modeling rooms 1, 2 and 3 had respectively 235, 245 and 314 points, which correspond to approximately 38, 51 and 47 hours worth of data. Since these sets did not come from a single experiment, but are an informative subset of the 748 hours initially available to us, they provided enough prediction capabilities to our non-parametric models.
-
+\afterpage{
+\begin{landscape}
 \begin{figure*}[!t]
 	\centering
-	\includegraphics[scale=0.29]{../images/chap3_room_1_temp_model_train.pdf}  \\[4pt]
-	\includegraphics[scale=0.29]{../images/chap3_room_1_temp_model_test1.pdf}
-	\includegraphics[scale=0.29]{../images/chap3_room_1_temp_model_test2.pdf} \\[4pt]
-	\includegraphics[scale=0.29]{../images/chap3_room_2_temp_model_train.pdf}  \\[4pt]
+	\includegraphics[scale=0.29]{../images/chap3_room_1_temp_model_train.pdf}  
+	\includegraphics[scale=0.29]{../images/chap3_room_1_temp_model_test1.pdf} 
+	\includegraphics[scale=0.29]{../images/chap3_room_1_temp_model_test2.pdf} \\[10pt]
+	\includegraphics[scale=0.29]{../images/chap3_room_2_temp_model_train.pdf} 
 	\includegraphics[scale=0.29]{../images/chap3_room_2_temp_model_test1.pdf}
-	\includegraphics[scale=0.29]{../images/chap3_room_2_temp_model_test2.pdf} \\[4pt]
-	\includegraphics[scale=0.29]{../images/chap3_room_3_temp_model_train.pdf}  \\[4pt]
+	\includegraphics[scale=0.29]{../images/chap3_room_2_temp_model_test2.pdf} \\[10pt]
+	\includegraphics[scale=0.29]{../images/chap3_room_3_temp_model_train.pdf} 
 	\includegraphics[scale=0.29]{../images/chap3_room_3_temp_model_test1.pdf}
 	\includegraphics[scale=0.29]{../images/chap3_room_3_temp_model_test2.pdf}
-	\caption{Training (left) and test results (center, right) of the Gaussian process models based on real experimental data. The mean predictions are shown in solid blue, whereas the uncertainty envelope of two standard deviations, in light blue. The sampling period is 10 minutes. The mean predictions were obtained by simulating the GP auto-regressive models forward in time for 2 hours and only feeding back new temperature information at the orange dots. The training plots only show a portion of the training set.}
+	\caption{
+		Train and test results for the Gaussian process auto-regressive models predicting the temperature evolution within rooms 1, 2 and 3. The training plots only display a portion of the training set. The GP means are depicted in solid blue and the two standard deviation interval in light blue. The real temperatures are shown in dashed black.
+		%Training (left) and test results (center, right) of the Gaussian process models based on real experimental data. The mean predictions are shown in solid blue, whereas the uncertainty envelope of two standard deviations, in light blue. The sampling period is 10 minutes. The mean predictions were obtained by simulating the GP auto-regressive models forward in time for 2 hours and only feeding back new temperature information at the orange dots. The training plots only show a portion of the training set.
+	}
 	\label{fig.trainTestRes}
 \end{figure*}
+\end{landscape}
+}
 
-All GPs were defined and trained with the aid of the \texttt{GPflow2} \cite{gpflow} and \texttt{SciPy} \cite{SciPy} packages. No priors were placed on the hyperparameters and we employed the marginal likelihood criterion along with the limited-memory BFGS optimization algorithm to tune them. Training the models with the aforementioned number of points took consistently less than 5 seconds each on a 2.4 GHz, core i9-9980HK machine. The obtained training and test results can be seen in Figure~\ref{fig.trainTestRes}. We highlight that the plots show multi-step ahead predictions over a horizon of 2 hours, that is, 12 time steps, correcting for the temperature mismatch only at the orange points. Assessing the prediction quality of the models in this way was necessary as they were to be used within an MPC formulation. It is worth noting that, even though the left plots are labeled as ``training results'', the models incorporated only a small fraction of those features due to our dropping of nearby data-points. The central and right-side plots show the predictions over a period of 50 and 40 hours, but in completely new scenarios, never presented to the model during training. 
+In order to train the GP models in an efficient way, balancing the information brought by the data-set and non-parametric model size, nearby feature vectors were dropped. The Euclidean norm of the difference was chosen as the distance function. Such a dropping also improves the numerical stability of the model kernel matrix. Finally, the GPs modeling rooms 1, 2 and 3 had respectively 235, 245 and 314 points, which correspond to approximately 38, 51 and 47 hours worth of data. Since these sets did not come from a single experiment, but are an informative subset of the 748 hours initially available to us, they provided enough prediction capabilities to our non-parametric models. Training the models with the aforementioned number of points took consistently less than 5 seconds each on a 2.4 GHz, core i9-9980HK machine. The obtained training and test results can be seen in Figure~\ref{fig.trainTestRes}. We highlight that the plots show multi-step ahead predictions over a horizon of 2 hours, that is, 12 time steps, correcting for the temperature mismatch only at the orange points. Assessing the prediction quality of the models in this way was necessary as they were to be used within an MPC formulation. It is worth noting that, even though the left plots are labeled as ``training results'', the models incorporated only a small fraction of those features due to our dropping of nearby data-points. The central and right-side plots show the predictions over a period of 50 and 40 hours, but in completely new scenarios, never presented to the model during training. 
 
 Inspecting Figure~\ref{fig.trainTestRes}, we see that the mean predictions mostly follow the underlying ground-truth signal during training. The disparity among the rooms is in their uncertainty bands: whereas model 1 and 2 presented moderate levels of spread, model 3 showed a fairly large one. We believe this uncertainty to stem from room~3 being the most exposed one in terms of direct solar radiation, and from $R_\text{sol}$ not being a feature of its GP. We remind the reader that $R_\text{sol}$ was disregarded to accelerate the real-time computations and ensure that the optimization problem was solved within the time allocated to it. By taking this larger uncertainty into account, we were able to avoid violating constraints when closing the loop with the MPC controller. The outcome of the test phase was qualitatively similar to the training results, aside from some additional performance degradation close to the high temperature peaks. Overall, we deemed the results reasonable given the challenging two-hour horizon of the prediction task.
 
 \subsection{Learning the chiller energy consumption}
 \label{sec:learningChiller}
 
-We tackled the problem of operating the system while minimizing its electrical demand with the two-step approach described next. The first goal was to reconstruct the chiller refrigeration curve from historical data, more specifically, from the volumetric air-flow rates along with the outdoor temperature and the supplied air temperatures. Based on these quantities, the thermal power delivered by the chiller was inferred. Next, we used as features the outdoor temperature $T_\text{out}$ and the sum of the valve positions $\Theta = \theta_1 + \theta_2 + \theta_3$, the latter correlating with the water flow through the AHU coils (see Section~\ref{sec.controlProb}). A representative dataset was gathered over a period of 203 hours, which encompassed both random open-loop excitation and closed-loop operation. During this period, the AHU valves ranged from being completely open to being fully closed, and the ambient temperature varied from 15 to 40 degrees Celsius. The data distribution can be seen in Figure~\ref{fig.thermalAndElectrical}. We remark that the portion of the domain where the outdoor temperature is high and the total valve openings are low is not populated with samples due to operational constraints of the system, a common issue in HVAC control \cite{maddalena2020data}. The last step was to augment the batch with a grid of $T_\text{out}$ values paired with $\Theta=0\,$degs and $0\,$kW labels to represent the zero water-flow regime.
+The problem of building a meaningful objective to minimize the system energy consumption was tackled with the two-step method described next. The first goal was to reconstruct the chiller refrigeration curve from historical data, more specifically, from the volumetric air-flow rates along with the outdoor temperature and the supplied air temperatures. Based on these quantities, the thermal power delivered by the chiller was inferred. Next, we used as features the outdoor temperature $T_\text{out}$ and the sum of the valve positions $\Theta = \theta_1 + \theta_2 + \theta_3$, the latter correlating with the water flow through the AHU coils (see Section~\ref{sec.controlProb}). A representative dataset was gathered over a period of 203 hours, which encompassed both random open-loop excitation and closed-loop operation. During this period, the AHU valves ranged from being completely open to being fully closed, and the ambient temperature varied from 15 to 40 degrees Celsius. The data distribution can be seen in Figure~\ref{fig.thermalAndElectrical}. We remark that the portion of the domain where the outdoor temperature is high and the total valve openings are low is not populated with samples due to operational constraints of the system, a common issue in HVAC control. The last step was to augment the batch with a grid of $T_\text{out}$ values paired with $\Theta=0\,$degs and $0\,$kW labels to represent the zero water-flow regime.
 
 \begin{figure*}[!t]
 	\centering
-	\includegraphics[width=0.35\linewidth]{../images/chap3_thermal_surface.pdf} 
-	\hspace{10pt}\includegraphics[width=0.26\linewidth]{../images/chap3_ther_energy.pdf}
-	\includegraphics[width=0.26\linewidth]{../images/chap3_elec_energy.pdf}
-	\caption{(Left) Reconstruction of the chiller refrigeration surface. Data were collected during a period of 203 hours, including both of open-loop excitation as well as closed-loop operation. (Center) Thermal power $Q(T_\text{out},\Theta)$ and (right) electrical power $E(T_\text{out},\Theta)$ curves of the chiller as a function of the valves openings $\Theta$. The plots consider typical outdoor temperature values $T_{\text{out}} = 20, 25, 30$ and $35^{\circ}$C.}
+	\includegraphics[width=0.5\linewidth]{../images/chap3_thermal_surface.pdf}  \\[14pt]
+	\hspace{10pt}\includegraphics[width=0.4\linewidth]{../images/chap3_ther_energy.pdf} \hspace{3pt}
+	\includegraphics[width=0.4\linewidth]{../images/chap3_elec_energy.pdf}
+	\caption{Reconstruction of the chiller refrigeration surface (top). Data were collected during a period of 203 hours, including both of open-loop excitation as well as closed-loop operation. Thermal power $Q(T_\text{out},\Theta)$ (bottom left) and electrical power $E(T_\text{out},\Theta)$ (bottom right) curves of the chiller as a function of the valves openings $\Theta$. The plots consider typical outdoor temperature values.}
 	\label{fig.thermalAndElectrical}
 \end{figure*}
 
-Polynomial ridge regression was performed to fit the data described above. After experimenting with different model orders, we found that a cubic model provided a good balance between describing the observed points and not overfitting them. The results are presented in Figure~\ref{fig.thermalAndElectrical}, where the obtained model analytical expression is
+Polynomial ridge regression was performed to fit the data described above. After experimenting with different model orders, we found that a cubic model provided a good balance between describing the observed points and not overfitting them. The results are presented in Figure~\ref{fig.thermalAndElectrical} and the final model was
+%\begin{align}
+%	&\text{Q}(T_\text{out},\Theta) = -3.15 \, T_\text{out} - 3.03 \,\texttt{e}^{-2} \, \Theta + 1.73\,\texttt{e}^{-1} \, T_\text{out}^2 \nonumber \\
+%	&- 1.56\,\texttt{e}^{-3} T_\text{out} \Theta + 3.09\,\texttt{e}^{-4} \Theta^2 - 2.75\,\texttt{e}^{-3} T_\text{out}^3 \label{eq.thermalEnergy} \\
+%	&+ 4.90 \,\texttt{e}^{-4} T_\text{out}^2 \Theta - 6.86 \,\texttt{e}^{-5} T_\text{out} \Theta^2 + 2.56 \,\texttt{e}^{-6}\Theta^3 + 20.22 \nonumber
+%\end{align}
 \begin{align}
-	&\text{Q}(T_\text{out},\Theta) = -3.15 \, T_\text{out} - 3.03 \,\texttt{e}^{-2} \, \Theta + 1.73\,\texttt{e}^{-1} \, T_\text{out}^2 \nonumber \\
-	&- 1.56\,\texttt{e}^{-3} T_\text{out} \Theta + 3.09\,\texttt{e}^{-4} \Theta^2 - 2.75\,\texttt{e}^{-3} T_\text{out}^3 \label{eq.thermalEnergy} \\
-	&+ 4.90 \,\texttt{e}^{-4} T_\text{out}^2 \Theta - 6.86 \,\texttt{e}^{-5} T_\text{out} \Theta^2 + 2.56 \,\texttt{e}^{-6}\Theta^3 + 20.22 \nonumber
+	&\text{Q}(T_\text{out},\Theta) = 20.22 -3.15 \, T_\text{out} - 3.03 \,\texttt{e}^{-2} \, \Theta + 1.73\,\texttt{e}^{-1} \, T_\text{out}^2 - 1.56\,\texttt{e}^{-3} T_\text{out} \Theta \nonumber \\
+	& + 3.09\,\texttt{e}^{-4} \Theta^2 - 2.75\,\texttt{e}^{-3} T_\text{out}^3 + 4.90 \,\texttt{e}^{-4} T_\text{out}^2 \Theta - 6.86 \,\texttt{e}^{-5} T_\text{out} \Theta^2 + 2.56 \,\texttt{e}^{-6}\Theta^3  \label{eq.thermalEnergy} 
 \end{align}
-% \begin{equation}
-% \begin{split}
-%     \text{Q}(T_\text{out},\Theta) = 20.22 - 3.15 \, T_\text{out} - 3.03 \,e^{-2} \, \Theta + 1.73\,e^{-1} \, T_\text{out}^2 \\
-%     - 1.56\,e^{-3} T_\text{out} \Theta + 3.09\,e^{-4} \Theta^2 - 2.75\,e^{-3} T_\text{out}^3 \\
-%     + 4.90 \,e^{-4} T_\text{out}^2 \Theta - 6.86 \,e^{-5} T_\text{out} \Theta^2 + 2.56 \,e^{-6}\Theta^3 
-% \end{split}
-% \label{eq.thermalEnergy}
-% \end{equation}
 with \texttt{e}$^{n}$ being a shorthand for $\times10^{n}$. The model attained a mean absolute error of $2.88$ and a mean squared error of $12.97\,$kW. As a second step, we fit a concave coefficient of performance (COP) curve, which is typical for variable-speed compressor chillers and dictates how efficient they are in converting electrical to thermal energy. The final utilized COP curve was
 %It was assumed that the passive cooling load imposed by the remaining surgery center rooms was such that the vertical range in Figure~\ref{fig.thermalAndElectrical} mapped to the increasing part of the COP curve, the peak, as well as the decreasing section. We did so intentionally to pose a challenging optimization objective and assess the capabilities of the proposed control scheme. 
 \begin{equation}
-	\begin{split}
-		\text{COP}(Q) = 3.30 \, \texttt{e}^{-7} Q^4 - 2.69 \, \texttt{e}^{-5} Q^3 - 2.67 \, \texttt{e}^{-3} Q^2 \\ + 2.34 \, \texttt{e}^{-1} Q^1 - 4.45 \, \texttt{e}^{-4}
+		%		\text{COP}(Q) = 3.30 \, \texttt{e}^{-7} Q^4 - 2.69 \, \texttt{e}^{-5} Q^3 - 2.67 \, \texttt{e}^{-3} Q^2 + 2.34 \, \texttt{e}^{-1} Q^1 - 4.45 \, \texttt{e}^{-4}
+		\text{COP}(Q) =  - 4.45 \, \texttt{e}^{-4}  + 2.34 \, \texttt{e}^{-1} Q - 2.67 \, \texttt{e}^{-3} Q^2 - 2.69 \, \texttt{e}^{-5} Q^3 + 3.30 \, \texttt{e}^{-7} Q^4
 		\label{eq.COP}
-	\end{split}
 \end{equation}
 which, given the thermal range displayed in Figure~\ref{fig.thermalAndElectrical}, implies in a performance coefficient varying approximately between 1.5 and 4.5.
 
@@ -235,32 +277,36 @@ where $\Theta_t = \sum_{i=1}^{3} \theta_{i,t}$ is the sum of all valve positions
 
 The optimization problem \eqref{eq.optControlProb} was written in \texttt{Python} with the aid of CasADi \cite{casadi}, an automatic-differentiation package that provides gradient information for numerical solvers--in our case, the interior-point method IPOPT. As is customary in predictive control, \eqref{eq.optControlProb} was recursively solved on-line with the most recently available system information, with only the first optimal control action being transmitted to the valves. We underline that the main source of complexity in \eqref{eq.optControlProb} is the presence of the constraints \eqref{eq.constr1} and \eqref{eq.constr2}, which are highly non-linear due the GP mean and variance. Since convexity is absent, multiple local optima might exist, a fact that was indeed verified in practice. By intelligently providing solvers with high-quality initial guesses, this problem can be mostly overcome. Our particular case study relied on initializing the numerical solver with control, temperature, slack and energy trajectories obtained with a virtual PI controller. The intuition was to allow the MPC loop to build on such an initial guess and further optimize operation. For a detailed study on solve times and how the number of GP data-points impacted them, see Appendix~A.
 
+In order to shed light on how the number of training points affects the solve times of the non-convex optimization problem \eqref{eq.optControlProb}, the following study was conducted. Five sets of GP models were trained on distinct datasets with cardinalities $N = 352$, $794$ (precisely the one used in the experiments), $1280$, $1910$ and $2643$. In all scenarios, the total number of points present in each of the GPs was approximately a third of the total number $N$, so that the models were balanced. We then generated random initial conditions, uniformly sampled from sensible intervals: $16 \leq T_{1,2,3} \leq 23$, $9 \leq T_\text{sup} \leq 13$, and $15 \leq T_\text{out} \leq 35$. Finally, we solved the warm-started non-convex MPC \eqref{eq.optControlProb} on a 2.4 GHz, i9 machine $50$ times per scenario and recorded their run times. 
+
+The results are presented in Figure~\ref{fig.runTimes}, where the vertical scale is logarithmic. The median values of the box plots rose from $4.19$ to $18.69$, $85.42$, $121.12$ and $255.68$ seconds respectively from the smallest to the largest dataset. Although using $N=1910$ points does not seem unreasonable at first, challenging initial conditions such as ones close to violating constraints can easily increase the problem solve time: the highest point obtained for the $N=1910$ scenario was $429$ seconds. Ideally, and specially when occupants experience thermal discomfort, the control action has to be computed in negligible time to be applied as soon as possible to the system. Keeping the solve times below a low percentile of the total sampling period is thus a common desideratum. In our application, we regarded $N=794$ to be an adequate choice.
+%Recalling that ideally the control action has to be computed in negligible time, one concludes that this scenario is infeasible for practical deployment. Indeed, if the solve time is $429$ secs and our sampling period is $600$ secs, the control action will only be applied for 28\% of the total time.
+
+\begin{figure}[!t]
+	\centering
+	\includegraphics[scale=0.67]{../images/chap3_warm_start.pdf} \hspace{6pt}
+	\caption{Box and whisker plots of the MPC solve times considering different dataset sizes. The dashed gray line marks our sampling period of $10\,$mins. Each boxplot is based on 50 time samples, obtained using randomized initial conditions.}
+	\label{fig.runTimes}
+\end{figure}
 
 \section{Experimental results}
 
+The previously described Gaussian process-based MPC formulation was deployed on the local computer and used to operate the HVAC system during multiple days in the months of October and November 2021. We report in Figure~\ref{fig.prettyCool} a four-day uninterrupted experiment carried out from November 10 to November 13 that is rather representative of the local internal and external conditions. The plots show the room temperatures and the immediate uncertainty associated with the GP predictions: $T_\text{unc} = \beta \text{var}^{1/2}$ as employed in the formulation \eqref{eq.constr2}, and evaluated for the next time-step. Both outdoor signals, the temperature and the solar radiation, are also given. The reader is reminded that, although the latter contributes with additional heat gains, it is completely unknown to the controller as explained in Section~\ref{sec.ModelTrainingAndTesting}. We highlight that the curves displayed in the figure were not filtered in any way; the sole manipulation performed with the data was the imputation of the missing temperature entries using linear interpolation. These points, however, accounted for only 43 out of the 1728 indoor temperature values gathered during the four-day experiment.
 
-The previously described Gaussian process-based MPC formulation was deployed on the local computer and used to operate the HVAC system during multiple days in the months of October and November 2021. We report in Figure~\ref{fig.prettyCool} a four-day uninterrupted experiment carried out from November 10 to November 13 that is rather representative of the local internal and external conditions. The plots show the room temperatures and the ``immediate'' uncertainty associated with the GP predictions: $T_\text{unc} = \beta \text{var}^{1/2}$ as employed in the formulation \eqref{eq.constr2}, and evaluated for the next time-step. Both outdoor signals, the temperature and the solar radiation, are also given. The reader is reminded that, although the latter contributes with additional heat gains, it is completely unknown to the controller as explained in Section~\ref{sec.ModelTrainingAndTesting}. We highlight that the curves displayed in the figure were not filtered in any way; the sole manipulation performed with the data was the imputation of the missing temperature entries using linear interpolation. These points, however, accounted for only 43 out of the 1728 indoor temperature values gathered during the four-day experiment.
-
-\begin{figure*}[!t]
+\afterpage{
+\begin{landscape}
+\begin{figure}[!t]
 	\centering
-	\includegraphics[width=1\linewidth]{../images/chap3_expres.pdf} 
+	\includegraphics[width=0.7\linewidth]{../images/chap3_expres.pdf} 
 	\caption{MPC experimental results over four days: indoor temperature, valve position and uncertainty estimate associated with each room (top three plots); outdoor temperature, solar radiation and AHUs supply water temperature (bottom three plots). The system was sampled and controlled with a periodicity of 10 minutes.}
 	\label{fig.prettyCool}
-\end{figure*}
+\end{figure}	
+\end{landscape}
+}
 
 Consider first the day November 10 and note the relatively high internal room temperatures when the experiment started, which were the consequence of a harsh previous day. The MPC controller used some control authority to bring the temperatures below the 21-degree line and then partially closed the valves. After the morning shift started (7 am), even though $\theta_2$ and $\theta_3$ were fully open, $T_2$ and $T_3$ violated the constraints and were only brought below 21 degrees late that evening. High initial conditions along with a peak outdoor temperature of 35 degrees overloaded the cooling system, causing violations of the indoor temperature constraint in two rooms. 
 
-The two days that followed (November 12 and 13) were less warm and, as a result, the MPC controller successfully modulated the valves so as to guarantee constraint satisfaction. It is evident how $\theta_1$, $\theta_2$ and $\theta_3$ assume lower values when $T_\text{out}$ is low, and tend to saturate at their maximum during working hours, which matches our intuition. 
-
-Lastly, we focus on the data from November 13, where one can readily see a sudden peak in the indoor temperatures, being also present in $T_{\text{sup}}$. This was caused by a momentary halt in the water pumps responsible for the chilled water circuit--an event that could be regarded as a fault from a control system perspective. During this period, as there was no water circulation through the AHU cooling coils, there was also no refrigeration and the indoor spaces received warm air since the fans were kept on. As soon as the pumps were again activated, the chiller immediately decreased the supply water temperature and the operation was normalized. During daytime, the indoor climate was kept within the desired limits despite the valves staying saturated at their low values, even at noon. The fact that almost no additional actuation was needed is due to that day being a Saturday, when no operations are scheduled and the three doors present in the environment are minimally opened and closed. This demonstrates how strong the internal heat gains and unmeasured disturbances normally are.
-
-\begin{figure*}[!t]
-	\hspace{0pt}
-	\includegraphics[width=0.95\linewidth]{../images/chap3_simres.pdf} 
-	\caption{Simulation results of the normalized energy consumption and thermal performance (average temperature bound violation) of different control strategies. Three weather profiles were considered: mild, warm and hot. The indoor temperatures were initialized at different values according to the color scheme:...} 
-	%{\Large \textcolor{color_20}{\textbf{-}}} 17 °C, {\Large \textcolor{color_21}{\textbf{-}}} 19 °C, {\Large \textcolor{color_22}{\textbf{-}}} 21 °C.}
-	\label{fig.powerRes}
-\end{figure*}
+The two days that followed, November 12 and 13, were less warm and, as a result, the MPC controller successfully modulated the valves so as to guarantee constraint satisfaction. It is evident how $\theta_1$, $\theta_2$ and $\theta_3$ assume lower values when $T_\text{out}$ is low, and tend to saturate at their maximum during working hours, which matches our intuition.  Lastly, we focus on the data from November 13, where one can readily see a sudden peak in the indoor temperatures, being also present in $T_{\text{sup}}$. This was caused by a momentary halt in the water pumps responsible for the chilled water circuit--an event that could be regarded as a fault from a control system perspective. During this period, as there was no water circulation through the AHU cooling coils, there was also no refrigeration and the indoor spaces received warm air since the fans were kept on. As soon as the pumps were again activated, the chiller immediately decreased the supply water temperature and the operation was normalized. During daytime, the indoor climate was kept within the desired limits despite the valves staying saturated at their low values, even at noon. The fact that almost no additional actuation was needed is due to that day being a Saturday, when no operations are scheduled and the three doors present in the environment are minimally opened and closed. This demonstrates how strong the internal heat gains and unmeasured disturbances normally are.
 
 To assess the efficiency gains as well as the thermal performance of the deployed strategy, MPC was compared to alternative algorithms, all subject to exactly the same environmental conditions by means of simulations. We underline that this simulation model was calibrated on data that was \textit{not} included in the GPs training set, thus putting to test the MPC prediction capabilities. The disturbance signals $T_\text{out}$, $T_\text{sup}$ and $R_\text{sol}$ from November 10 were employed, and the indoor temperatures of the three rooms were uniformly initialized at values ranging from $17$ to $21$ degrees Celsius. The outdoor temperature profile was processed to yield three different weather scenarios: hot weather, which was exactly the same $T_\text{out}$ curve seen in Figure~\ref{fig.prettyCool}; warm weather, a $-2$°C shifted version of it, peaking at 33°C around noon; and mild weather, a $-5$°C shifted version of it, peaking at peaking at 30°C. Besides the MPC algorithm \eqref{eq.optControlProb}, the following were also tested:
 \begin{itemize}
@@ -270,6 +316,18 @@ To assess the efficiency gains as well as the thermal performance of the deploye
 	\item An average $(\theta_\text{max}-\theta_\text{min})/2$ controller (AVG) whose instantaneous values are selected by sampling the interval $\theta_\text{min}$ to $\theta_\text{max}$ using a uniform distribution.
 \end{itemize}
 
+\begin{figure*}[!t]
+	\centering
+	\hspace{0pt}
+	%\includegraphics[width=0.95\linewidth]{../images/chap3_simres.pdf} 
+	\includegraphics[width=0.55\linewidth]{../images/chap3_simres_mild.pdf} \\[12pt]
+	\includegraphics[width=0.55\linewidth]{../images/chap3_simres_warm.pdf} \\[12pt]
+	\includegraphics[width=0.55\linewidth]{../images/chap3_simres_hot.pdf} 
+	\caption{Simulation results of the normalized energy consumption and thermal performance (average temperature bound violation) of different control strategies. Three weather profiles were considered: mild, warm and hot. The indoor temperatures were initialized at different values according to the color scheme:...} 
+	%{\Large \textcolor{color_20}{\textbf{-}}} 17 °C, {\Large \textcolor{color_21}{\textbf{-}}} 19 °C, {\Large \textcolor{color_22}{\textbf{-}}} 21 °C.}
+	\label{fig.powerRes}
+\end{figure*}
+
 In order to gauge the energy saving potential of the HVAC plant, we executed the REF strategy described above. This algorithm can reach significant efficiency gains while guaranteeing thermal comfort since it exploits a perfect internal model as well as perfect forecasts of the outdoor and supply water temperatures.
 
 The obtained normalized energy consumption results and average room thermal comfort violations are shown in Figure~\ref{fig.powerRes}. Since the non-linear chiller curves described in Section~\ref{sec:learningChiller} were employed to measure the energy consumption, the reader is reminded that there is a non-trivial relationship between the weather conditions and indoor temperatures, and the final consumed energy. This aspect is due to the nature of the chiller and not the use of any particular control technique. As a last note, one specific energy normalization factor was used for each weather scenario shown in Figure~\ref{fig.powerRes} to enhance clarity.
@@ -278,17 +336,4 @@ Glancing at the mild and warm weather plots, one notices how the REF and MPC dat
 
 By analyzing the horizontal scales and contrasting REF to PI, ON/OFF and AVG, one concludes that this particular HVAC plant could have its efficiency boosted by approximately 2.5\%, 4\% and 5\% respectively in the mild, warm and hot weather scenarios. Notice how, as opposed to studies such as \cite{bunning2020experimental}, these numbers refer to the electrical energy associated with a chiller, and not to a cumulative thermal energy. Moreover, as the hospital was not subject to time-varying electricity prices, the contrast among control strategies was not as broad as for instance the one reported in \cite{joe2022investigation}. The proposed MPC strategy \eqref{eq.optControlProb} attained results close to the aforementioned maximum percentages. Quantitatively, MPC lead to a maximum energy efficiency improvement of 2.29\%, 3.13\% and 4.76\% respectively in mild, warm and hot weather, when compared to the PI and ON/OFF counterparts.
 
-\section{Time complexity}
-
-
-In order to shed light on how the number of training points affects the solve times of the non-convex optimization problem \eqref{eq.optControlProb}, the following study was conducted. Five sets of GP models were trained on distinct datasets with cardinalities $N = 352$, $794$ (precisely the one used in the experiments), $1280$, $1910$ and $2643$. In all scenarios, the total number of points present in each of the GPs was approximately a third of the total number $N$, so that the models were balanced. We then generated random initial conditions, uniformly sampled from sensible intervals: $16 \leq T_{1,2,3} \leq 23$, $9 \leq T_\text{sup} \leq 13$, and $15 \leq T_\text{out} \leq 35$. Finally, we solved the warm-started non-convex MPC \eqref{eq.optControlProb} on a 2.4 GHz, i9 machine $50$ times per scenario and recorded their run times. 
-
-The results are presented in Figure~\ref{fig.runTimes}, where the vertical scale is logarithmic. The median values of the box plots rose from $4.19$ to $18.69$, $85.42$, $121.12$ and $255.68$ seconds respectively from the smallest to the largest dataset. Although using $N=1910$ points does not seem unreasonable at first, challenging initial conditions such as ones close to violating constraints can easily increase the problem solve time: the highest point obtained for the $N=1910$ scenario was $429$ seconds. Ideally, and specially when occupants experience thermal discomfort, the control action has to be computed in negligible time to be applied as soon as possible to the system. Keeping the solve times below a low percentile of the total sampling period is thus a common desideratum. In our application, we regarded $N=794$ to be an adequate choice.
-%Recalling that ideally the control action has to be computed in negligible time, one concludes that this scenario is infeasible for practical deployment. Indeed, if the solve time is $429$ secs and our sampling period is $600$ secs, the control action will only be applied for 28\% of the total time.
-
-\begin{figure}[!t]
-	\hspace{6pt}
-	\includegraphics[scale=0.55]{../images/chap3_warm_start.pdf}
-	\caption{Box and whisker plots of the MPC solve times considering different dataset sizes. The dashed gray line marks our sampling period of $10\,$mins. Each boxplot is based on 50 time samples, obtained using randomized initial conditions.}
-	\label{fig.runTimes}
-\end{figure}
+\section{Conclusions and outlook}

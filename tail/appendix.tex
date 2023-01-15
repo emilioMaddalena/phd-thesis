@@ -189,6 +189,16 @@ The concept of a Hamel basis is aligned with the more specific concept of a ``ba
 	A polytope $P \subset \mathbb{R}^n$ is a bounded polyhedron.
 \end{definition}
 
+\begin{definition}
+	\textbf{(Polyhedral projection)}
+	Let $P \subset \mathbb{R}^n$ be a polyhedron described by $\{x \in \mathbb{R}^n \, | \, H x \leq h \}$ for some $H \in \mathbb{R}^{n \times m}$ and $h \in \mathbb{R}^{m}$. The projection of a point $z \in \mathbb{R}^n$ onto $P$ is defined as
+	\begin{align}
+		\label{def.pol_proj}
+		\text{Proj}_P(x) = \argmin_{p \in \mathbb{R}^n} \ &\Vert p - z \Vert_2^2 \\
+		\text{subj. to} \ & H p \leq h \nonumber
+	\end{align}
+\end{definition}
+
 
 
 \mycomment{Perhaps explain the difference between SUP and MAX, INF and MIN. }
