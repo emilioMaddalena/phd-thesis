@@ -3,13 +3,19 @@
 \markboth{Learning with kernels}{Learning with kernels}
 
 \section{Introduction}
-At its core, learning refers to the process of \textit{gathering information} and using it to \textit{improve one's knowledge} about the subject or phenomenon under study. The standing assumption here is then clearly that a link is in place, tying information and phenomenon together even if such link is partially corrupted. Information typically comes in the form of data, samples, sometimes referred to as examples, and
+At its core, learning refers to the process of gathering information and using it to improve one's knowledge about the phenomenon under study, which we will call the ground-truth. The standing assumption is that a link is in place, tying information and the ground-truth together even if such link is partially corrupted. Information typically comes in the form of data, samples, sometimes referred to as examples, and
 %In modern machine learning, people study a number of rather abstract subjects ranging from the traits that distinguish images of muffins and chihuahuas, to the link between passengers' features and their survival likelihood in case of a ship sinking event.  
-the mathematical formalism often used in modern machine learning to study the link between examples and the underlying phenomena is statistics. This choice is convenient because it can describe the possible non-determinism of outcomes through the concepts of distributions and samples; and because it provides us with plenty of tools to carry out learning, i.e., improve our knowledge about the phenomenon through the samples at hand. In this chapter, we will however adopt a different standpoint to study and tackle the problem of learning, which is, as we will later argue, more aligned with the ways control engineers are taught to see physical systems. This standpoint is the one offered by approximation theory.
+the mathematical formalism often used in modern machine learning to study the link between examples and the underlying phenomena is statistics. This choice is convenient because it can describe the possible non-determinism of outcomes through the concepts of distributions and samples; and because it provides us with plenty of tools to carry out learning, i.e., improve our knowledge about the phenomenon through the samples at hand. In this chapter, we will however adopt a different standpoint to study the problem of learning, relying on an \textit{epistemic} description of uncertainty rather than on an aleatoric one \citep{hullermeier2021aleatoric}.
 
-In this chapter, we will introduce the problem of learning from data and elucidate what approach will be taken to tackle it. Next, novel uncertainty quantification results will be presented concerning the point-evaluations of an  unknown ground-truth. Finally, some examples are given to illustrate the general use of the theory.
+When reporting physical parameters that are not exactly known, e.g. the friction coefficient between two surfaces or the leakage inductance of a transformer, it is common for engineers to specify ranges that are known to contain the \textit{true} coefficient values. Assuming that a true, invariable value exists although it is not exactly known is the epistemic way of modeling uncertainty. This approach is customary in many applied sciences and can be generalized from simple scalar parameters to maps in function spaces. The entire field of approximation theory, from which we will borrow many tools, makes constant use of this framework to derive best approximations and error bounds for their nominal models \citep{wendland2004scattered,iske2018approximation}.  Let us refer to this space as the ground-truth space (GTS), whereas the space from where our models are drawn will be called the hypothesis space (HS). An advantage of working with functions spaces is the ease of packing information into them that we might have as domain experts: take for instance the Lipschitz continuity explored in  \cite{milanese2004set,sabug2021smgo} or the weak derivatives assumptions in Sobolev GTSs by the authors of \cite{novara2022nonlinear}. In this chapter, rather than posing assumptions directly on the ground-truth, we will make use of an indirect formalism that ties the GTS to maps named \textit{kernels}. This approach guarantees the existence of a rich geometrical structure that will allow us to develop our theory.
 
-\mycomment{Statistical learning and approximation theory are not in opposition. Indeed, we can define the function of interest as the conditional \cite{temlyakov2008approximation}, perhaps talk about Belkin's work linking the two and advocating for using the approximation lenses.}
+Kernels are a fundamental building block of modern machine learning \citep{scholkopf2002learning}. They enable computing similarities in extended feature spaces while dispensing with the need of lifting the data onto them. Alternatively, they can be viewed as a non-linearity library used to empower certain linear algorithms, the canonical example being support vector machines. If kernels are used to describe simultaneously the HS and the GTS, then not only optimal models can be found, but also error-bounds can be derived for them at possibly out-of sample locations, thus guaranteeing the quality of the model predictions \citep{schaback2006kernel,kanagawa2018gaussian}. One interesting aspect of those bounds are their determinism, in that the ground-truth values cannot lie outside the established ‘prediction envelope’. Therefore, such methods could in principle be used in the engineering sciences to deterministically certify the performance or safety of algorithms that employ learned maps, which is remarkable due to their not being asymptotic, but finite-sample guarantees. There is however one strong limiting factor that hinders its applicability, namely the absence of a noise model \citep[§11]{wendland2004scattered}. Even though noise-free samples are to be expected in domains such as computer graphics and  computer simulations, where these techniques are usually applied  (see e.g. \citep{sarra2005adaptive,nikan2022numerical}), corrupted data is prevalent in electronics, robotics, building automation, among other fields. 
+
+In this chapter, we will explore kernel learning with hard guarantees. Our contributions, which are mainly reported in Section~\ref{sec.quant_uncert}, consist in posing and solving an uncertainty quantification (UQ) problem to compute envelopes that bound the unknown ground-truth values. We highlight that the UQ problem does not require defining a nominal model, being thus agnostic to its choice. As opposed to other deterministic bounds found in the literature (see the classical book \citep[§11]{wendland2004scattered}), ours take encompass an additive noise with bounded levels, a description that is not popular in general machine learning, but certainly relevant in domains such as robust analysis and control. A number of examples are presented at the end to illustrate different use-cases for the proposed theory, followed by concluding remarks and ideas for future investigations.
+
+%\footnote{Approximation theory is not in complete opposition to statistical learning. Indeed, we can define the function of interest as the conditional \citep{temlyakov2008approximation}.}
+% See also the work of \cite{belkin2018approximation} comparing the two views.}
+%In this chapter, we will introduce the problem of learning from data and elucidate what approach will be taken to tackle it. Next, novel uncertainty quantification results will be presented concerning the point-evaluations of an  unknown ground-truth. Finally, some examples are given to illustrate the general use of the theory.
 
 \section{The formalism of kernels}
 \label{sec.formalism_of_kernels}
@@ -196,6 +202,7 @@ In the absence of measurement noise, i.e., when $\epsilon_i = 0$, the outputs $y
 %		\text{subj. to} & \quad f(x_i) = y_i, \, i = 1,\dots,n 
 %\end{align}
 \begin{proposition}
+	\label{prop.MNI}
 	\textbf{(Minimum-norm interpolation (MNI))}
 	Let $\{(x_i,y_i)\}_{i=1}^n$ be a collection of points such that $x_i \in \mathbb{R}^m$ and $y_i \in \mathbb{R}$. Let $k$ be a PD kernel and $\rkhs \subset \mathbb{R}^\mathcal{X}$ its RKHS. Then, the variational problem
 	\begin{equation}
@@ -245,6 +252,7 @@ Specializing \eqref{eq.representer_theorem_general_loss} to a more usual loss fu
 
 
 \section{Quantifying uncertainty}
+\label{sec.quant_uncert}
 
 Besides being able to craft surrogate functions for our unknown ground-truth, it is also a common desideratum to understand how far away our predictions can be from the real phenomenon. We will start this section by formalizing the problem of bounding the ground-truth values that can be attained even at unseen locations given the information at hand. It is important to highlight that this process will not require a model. Next, alternative bounds are developed, this time around nominal models such as the ones presented in Section~\ref{sec.crafting_models}. Rather than limiting ourselves to the theoretical sphere, the discussion will also touch on the computational aspects involved in evaluating the derived expressions.
 
@@ -855,7 +863,7 @@ Predictions and the system angular velocity evolution from two different initial
 	\includegraphics[scale=0.25]{../images/chap2_numex_ex4_B.pdf}
 	\includegraphics[scale=0.25]{../images/chap2_numex_ex4_C.pdf}
 	\caption{A comparison between the optimal bounds (blue) and the closed-form sub-optimal ones (green). The 2D ground-truth was sliced at $z_1 = -3$ and is shown in dashed black.}
-	%\label{fig:ex3_time}
+	\label{fig.PENDULUM}
 \end{figure}
 	
 %%%%%%%%%%%%%%%%%
@@ -865,6 +873,10 @@ Predictions and the system angular velocity evolution from two different initial
 %%%%%%%%%%%%%%%%%
 
 \section{Conclusions and outlook}
+
+In this first part of the thesis, we introduced and developed a novel way of quantifying the out-of-sample uncertainty of the values of an unknown function. The framework was built around kernels, their RKHS spaces, and a bounded measurement noise assumption from which no statistical information is known. Optimal hard upper and lower bounds were then derived, being computable through convex optimization. Closed-form conservative approximation schemes were given to be used in time-constrained scenarios. Some properties of the optimal and sub-optimal approaches were derived and their sensitivity to the internal parameters (the RKHS norm estimate and the noise bound) were studied. The techniques were finally employed to solve a number of problems ranging from a direct function bounding one, to solving an optimization problem with unknown constraints, to certifying optimal control actions.
+
+We envision multiple future investigations and extensions of the theory presented in this chapter. First, additional properties of the optimal bounds could be established, in particular, although we have not had the time to prove it, we suspect the upper and lower envelopes C$(x)$ and B$(x)$ to be continuous and piece-wise smooth whenever the base kernel $k$ is smooth. Deriving this result would likely involve studying the solution set and the value function of the parametric program \eqref{eq.P1case1}.  One necessary extension to allow for the learning of dynamical systems from trajectories, and not resorting to multi-step ahead models, is to consider uncertainty in $x$ itself. This would call of course for robust parametric programming to be employed. Finally, on the application side, the KPC framework presented in Section~\ref{sec.kpc} guarantees constraint satisfaction, but can be rather challenging to implement in practice due to the use of multiple models. Long prediction horizons are generally desirable to favor stability, however, this requires more models to be trained in higher dimensional spaces since longer and longer control sequences are incorporated into the feature vector. Estimating hyperparameters and filling the space with data then become difficult tasks in such scenarios, limiting therefore KPC to short prediction horizons. To eliminate some of these difficulties, a different approach to kernel-based predictive control could be adopted, that of optimism. Instead of being robust against all possible ground-truth dynamics, one could pick a dynamic that is consistent with the historical data and complexity bound, the most convenient one. As the system is operated and more information is gathered, the set of possibilities is reduced and the adopted dynamic would be more consistent with the true unknown dynamics. We believe that, based on recent regret bounds for kernelized global optimization, convergence rates could be derived for the iterative performance improvement of this scheme and bounds could be established for the constraint violation frequency.
 
 \section{Appendices}
 
@@ -877,7 +889,7 @@ One popular approach to optimizing kernel hyperparameters is to consider the log
 
 Bayesian optimization (BayesOpt) is another widely adopted methodology to fine-tune hyperparameters against a pre-specified objective function \citep{snoek2012practical,shahriari2015taking}. BayesOpt operates on pairs of hyperparameters and their associated objective function values, and constructs a model for their unknown relationship. Next, a so-called \textit{acquisition function} based on the model is then employed to tell bad hyperparameters from promising ones \citep{wilson2018maximizing}. A new set of parameters is finally chosen to be experimented with and its performance is measured. This new piece of information is incorporated into the dataset and the process is repeated until some termination criterion is reached. Interestingly, the most popular model class used when reconstructing the aforementioned unknown relationship is Gaussian process, which is itself based on kernels whose own hyperparameters have to be set by the users.
 
-Lastly, we could also mention the different flavors of cross-validation (CV). The procedure builds an estimate of how suitable a set of hyperparameters are by evaluating the resulting model performance on unseen data. More specifically, it consists in shuffling and splitting the available data into batches, say $N$; making use of $N-1$ batches to define the model and the last one to assess its performance; the process is repeated $N$ times rotating the batches and yielding $N$ performance measures, which could be combined through averaging for instance. By following this algorithm, the most suitable hyperparameter value could be found from a predefined list of possible values. Note that, the log marginal likelihood itself could be a valid performance objective within CV \citep[§5.4.2]{williams2006gaussian}.
+Lastly, we could also mention the different flavors of cross-validation (CV). The procedure builds an estimate of how suitable a set of hyperparameters are by evaluating the resulting model performance on unseen data. More specifically, it consists in shuffling and splitting the available data into batches, say $N$; making use of $N-1$ batches to define the model and the last one to assess its performance; the process is repeated $N$ times rotating the batches and yielding $N$ performance measures, which could be combined through averaging for instance. By following this algorithm, the most suitable hyperparameter value could be found from a predefined list of possible values. An extreme version of CV is leave-one-out cross-validation (LOOCV), whereby a $d$-sample dataset is divided into $d$ batches. Finally, note that the log marginal likelihood itself could be a valid performance objective within CV \citep[§5.4.2]{williams2006gaussian}.
 
 \subsection{Estimating RKHS norms}
 \label{sec.appendix_estimating_rkhs_norms}
@@ -890,7 +902,7 @@ Members $f \in \rkhs$ are either finite weighted sums of partially evaluated ker
 \end{align}
 where \eqref{eq.rkhs_norm_eq1} is the RKHS norm definition, \eqref{eq.rkhs_norm_eq2} is the inner-product definition, and \eqref{eq.rkhs_norm_eq3} follows from the inner-product linearity and from the reproducing property of kernels (see \eqref{eq.reproducing_property}). As a result, the norm $\Vert f \Vert_\rkhs$ can be exactly and easily computed as long as we have at hand the weights $\alpha$ that define $f$.
 
-In practice, it is hard to imagine a situation where the coefficients $\alpha$ would be known for a given physical system. Suppose however that we have a dataset at hand $\{(x_i,f_{x_i})\}\}_{i=1}^n$, where $f_{x_i} = f(x_i)$. The inputs $x_i$ need to be pairwise-distinct. Assume that $k$ is SDP and consider the function $s_n(x) := \sum_{i=1}^n \alpha_i k(x_i,x)$, $\alpha = K_{XX}^{-1} f_X$, which reproduces our dataset at every input, i.e., $s_n(x_i) = f_{x_i}$. According to the well-known optimal recovery property \cite[§8.3]{iske2018approximation}, $s_n$ not only interpolates the dataset, but also attains a minimum RKHS norm while doing so and, moreover, $\Vert s_n \Vert_\rkhs \leq \Vert f \Vert_\rkhs$ for any number of samples $n$. In view of the quadratic form \eqref{eq.rkhs_norm_eq3}, it is evident that for any new pair $(x_{n+1},f_{x_{n+1}})$ added to the dataset, $\Vert s_{n+1} \Vert_\rkhs \geq \Vert s_n \Vert_\rkhs$ holds. One can finally show that if samples are acquired distributed enough to fill the domain\footnote{minimize the fill distance}, then $\Vert f \Vert_\rkhs$ is the least upper bound of the $\Vert s_n \Vert_\rkhs$ sequence and, from the monotone convergence theorem, $\Vert s_n \Vert_\rkhs \rightarrow \Vert f \Vert_\rkhs$ is guaranteed.
+In practice, it is hard to imagine a situation where the coefficients $\alpha$ would be known for a given physical system. Suppose however that we have a dataset at hand $\{(x_i,f_{x_i})\}\}_{i=1}^n$, where $f_{x_i} = f(x_i)$. The inputs $x_i$ need to be pairwise-distinct. Assume that $k$ is SPD and consider the function $s_n(x) := \sum_{i=1}^n \alpha_i k(x_i,x)$, $\alpha = K_{XX}^{-1} f_X$, which reproduces our dataset at every input, i.e., $s_n(x_i) = f_{x_i}$. According to the well-known optimal recovery property \cite[§8.3]{iske2018approximation}, $s_n$ not only interpolates the dataset, but also attains a minimum RKHS norm while doing so  (Proposition~\ref{prop.MNI}) and, moreover, $\Vert s_n \Vert_\rkhs \leq \Vert f \Vert_\rkhs$ for any number of samples $n$. In view of the quadratic form \eqref{eq.rkhs_norm_eq3}, it is evident that for any new pair $(x_{n+1},f_{x_{n+1}})$ added to the dataset, $\Vert s_{n+1} \Vert_\rkhs \geq \Vert s_n \Vert_\rkhs$ holds. One can finally show that if samples are acquired in such a way to fill the domain, then $\Vert f \Vert_\rkhs$ is the least upper bound of the $\Vert s_n \Vert_\rkhs$ sequence and, from the monotone convergence theorem, $\Vert s_n \Vert_\rkhs \rightarrow \Vert f \Vert_\rkhs$ is guaranteed.
 
 The discussion above showed that the RKHS norm $\Vert f \Vert_\rkhs$ can indeed be estimated from below from samples $\{(x_i,f_{x_i})\}_{i=1}^n$. This is done by simply evaluating the norm of the interpolant for which we know the weights $\alpha$
 \begin{equation}
@@ -898,17 +910,16 @@ The discussion above showed that the RKHS norm $\Vert f \Vert_\rkhs$ can indeed 
 \end{equation}
 The more samples we have, the closer the quadratic form will be from the target value $\Vert f \Vert_\rkhs$. Consider the example below for observations on how the estimation process unfolds in a practical scenario.
 
-Let $k:\mathbb{R}\times \mathbb{R} \rightarrow \mathbb{R}$ be the squared-exponential with lengthscale $\ell = 0.5$. A member $f \in \mathcal{H}$ of its RKHS is shown in Figure~\ref{fig.appendice_norm_estimation} (left), being composed of $100$ partially evaluated kernels whose centers and weights were randomly generated. The exact $\Vert f\Vert_\rkhs$ value was computed through \eqref{eq.rkhs_norm_eq3}, yielding $\Vert f\Vert_\rkhs = 11.24$. Next, the same quantity was estimated through data simply drawn randomly from the domain, following a uniform distribution. The associated $\Vert s_n \Vert_\rkhs$ from $n=1$ to $60$ is shown in Figure~\ref{fig.appendice_norm_estimation} (right).
-
 \begin{figure}[b]
 	\centering
-   %\hspace{1pt}
+	%\hspace{1pt}
 	\includegraphics[scale=1]{../images/norm_est.pdf} 
 	\includegraphics[scale=1]{../images/norm_value.pdf} %\hspace{8pt}
-	\caption{Bla bla bla.}
+	\caption{Estimating the RKHS norm of a function (left) from samples. The norm value of the MNI interpolant for an increasing number of samples (right) is shown to gradually approach the RKHS norm of the ground-truth.}
 	\label{fig.appendice_norm_estimation}
 \end{figure}
 
+Let $k:\mathbb{R}\times \mathbb{R} \rightarrow \mathbb{R}$ be the squared-exponential with lengthscale $\ell = 0.5$. A member $f \in \mathcal{H}$ of its RKHS is shown in Figure~\ref{fig.appendice_norm_estimation} (left), being composed of $100$ partially evaluated kernels whose centers and weights were randomly generated. The exact $\Vert f\Vert_\rkhs$ value was computed through \eqref{eq.rkhs_norm_eq3}, yielding $\Vert f\Vert_\rkhs = 11.24$. Next, the same quantity was estimated through data simply drawn randomly from the domain, following a uniform distribution. The associated $\Vert s_n \Vert_\rkhs$ from $n=1$ to $60$ is shown in Figure~\ref{fig.appendice_norm_estimation} (right). At around $n=42$, the lower estimate is seen to have essentially reached the $\Vert f \Vert_\rkhs$ level, capturing all the complexity there was to capture. Lastly, we selected a subset of only six of the previously samples points, those closer to some of the function peaks, and computed the associated interpolant norm. The value of 10.02 was obtained, i.e., 89\% of $\Vert f \Vert_\rkhs$, illustrating that a few well-located samples can already offer us a reasonable measure of the unknown ground-truth RKHS norm.
 
 Up to this point, only noiseless samples were consider. Suppose now the data come in the form $\{(x_i,y_i)\}_{i=1}^n$ with $x_i$ pairwise distinct and $y_i=f(x_i) + \delta_i$. Let the additive noise be bounded by some known value $\bar \delta \geq |\delta_i|$ for all $i$. Since we do not have access to the evaluations of $f$ anymore, $\Vert s_n \Vert_\rkhs$ cannot be computed. If we naively interpolate the data with the model $\tilde s_n(x) := \sum_{i=1}^n \alpha_i k(x_i,x)$, $\alpha = K_{XX}^{-1} y$, the resulting norm $\Vert \tilde s_n \Vert_\rkhs^2 = y^\top K_{XX}^{-1}y$ can be either larger or smaller than its noise-free counterpart. The mismatch between the two will depend on how each $\delta_i$ will disturb the samples, and its maximum effects can be exactly computed.
 
@@ -923,14 +934,14 @@ Up to this point, only noiseless samples were consider. Suppose now the data com
 
 Calculating $\Delta$ amounts to solving a convex optimization problem since it is the maximum of a strictly concave function, whereas $\nabla$ is not as simple.
 
-\begin{proposition}
-	Let all assumption listed in Proposition~\ref{prop.norms_mismatch} hold and, additionally, $\delta$ be a random vector with $\mathbb{E}(\delta) = \mu$ and $\mathbb{V}(\delta) = \Sigma$, then
-	\begin{equation}
-		\mathbb{E}(\Vert \tilde s_n \Vert_\rkhs^2 - \Vert s_n \Vert_\rkhs^2) = \mu^\top K_{XX}^{-1} \mu + \text{Tr}(K_{XX}^{-1}\Sigma) + 2y^\top K_{XX}^{-1} \mu
-	\end{equation}
-	Moreover, if $\delta$ follows a uniform distribution $\mathcal{U}(-\bar \delta, \bar \delta)$, then $\mathbb{E}(\Vert \tilde s_n \Vert_\rkhs^2 - \Vert s_n \Vert_\rkhs^2) = \dots$
-	\label{prop.expected}
-\end{proposition}
+%\begin{proposition}
+%	Let all assumption listed in Proposition~\ref{prop.norms_mismatch} hold and, additionally, $\delta$ be a random vector with $\mathbb{E}(\delta) = \mu$ and $\mathbb{V}(\delta) = \Sigma$, then
+%	\begin{equation}
+%		\mathbb{E}(\Vert \tilde s_n \Vert_\rkhs^2 - \Vert s_n \Vert_\rkhs^2) = \mu^\top K_{XX}^{-1} \mu + \text{Tr}(K_{XX}^{-1}\Sigma) + 2y^\top K_{XX}^{-1} \mu
+%	\end{equation}
+%	Moreover, if $\delta$ follows a uniform distribution $\mathcal{U}(-\bar \delta, \bar \delta)$, then $\mathbb{E}(\Vert \tilde s_n \Vert_\rkhs^2 - \Vert s_n \Vert_\rkhs^2) = \dots$
+%	\label{prop.expected}
+%\end{proposition}
 
 \subsection{Auxiliary definitions}
 \label{sec.auxiliary_definitions}
@@ -949,8 +960,10 @@ where $\bm{1}_{n_i}$ and $\bm{0}_{n_i}$ are respectively column vectors of ones 
 
 The column vector $f_X$ is made of function evaluations $f(x_i)$, which are repeated whenever multiple outputs are available at the same input location $x_i$. More concretely, $f_X := \Lambda \begin{bmatrix} f(x_1) & \dots & f(x_d) \end{bmatrix}^\top$.
 
-\subsection{Selected proofs}
+\subsection{Proofs}
 \label{sec.selected_derivations}
+
+In this section we provide proofs for all the propositions found throughout the chapter that were left unproven.
 
 \begin{my_proof}
 	\textbf{Proof of Proposition~\ref{prop.complex_constraint_always_active}:}
@@ -980,7 +993,7 @@ The column vector $f_X$ is made of function evaluations $f(x_i)$, which are repe
 			\label{eq.appendix_complex_constr_terms}
 		\end{align}
 	\end{subequations}
-	Note that $P_X^{-2}(x) > 0$ since $P_X(x) > 0$ for any $x$ not in $X$ \citep{karvonen2022error}. As a result, we see that \eqref{eq.appendix_complex_constr_terms} depends quadratically on $c_x$. Therefore, for any feasible $(c, c_x)$ such that \eqref{eq.appendix_complex_constr_terms1} inactive, there exists $ \tilde c_x := c_x + \varepsilon, \varepsilon > 0$ such that $(c,\tilde c_x)$ attains a higher objective while satisfying the constraints.
+	Note that $P_X^{-2}(x) > 0$ since $P_X(x) > 0$ for any $x$ not in $X$ \citep{karvonen2022error}. As a result, we see that \eqref{eq.appendix_complex_constr_terms} depends quadratically on $c_x$. Therefore, for any feasible $(c, c_x)$ such that \eqref{eq.appendix_complex_constr_terms1} is inactive, there exists $ \tilde c_x := c_x + \varepsilon, \varepsilon > 0$ such that $(c,\tilde c_x)$ attains a higher objective while satisfying the constraints.
 \end{my_proof}
 
 \begin{my_proof}
@@ -991,6 +1004,7 @@ The column vector $f_X$ is made of function evaluations $f(x_i)$, which are repe
 \begin{my_proof}
 	\textbf{Proof of Proposition~\ref{prop.decreasing}:}
 	Denote by $\mathds{P}1_1$ the problem solved with $D_1$ and decision variables $\begin{bmatrix} c & c_x \end{bmatrix}$. Similarly, $\mathds{P}1_2$ is associated with the dataset $D_2$ and the decision variables $\begin{bmatrix} c & c_x & c_z \end{bmatrix}$, where $c_z$ are due to the additional input in $D_2$. Since $D_2$ contains all members of $D_1$, the $\infty$-norm constraint of $\mathds{P}1_2$ can be recast as that of $\mathds{P}1_1$ and an additional constraint for $c_z$ and the new outputs. Let $\mathds{X}  := X \cup \{x\}$, $\bar c := \begin{bmatrix} c^\top c_x \end{bmatrix}^\top$ and $z := x_{d+1}$ be shorthand variables to ease notation. The complexity constraint of $\mathds{P}1_2$ is then
+	
 	\begin{subequations}
 		\begin{align}
 			\begin{bmatrix}
@@ -1047,7 +1061,7 @@ The column vector $f_X$ is made of function evaluations $f(x_i)$, which are repe
 		\end{align}
 		\label{eq.quadraticDecomp}
 	\end{subequations}
-	where the matrix identity found in Appendix~\ref{app.blockMatrixIdent} was used in $(i)$ and $P^2_{\mathds{X} }(z) = k(z,z) - K_{z \mathds{X} } K_{\mathds{X} \mathds{X} }^{-1} K_{\mathds{X} z}$. In $(ii)$, the definitions of $\bar c$ and $\mathds{X} $ were used. Thanks to $P_{\mathds{X} }(z) \geq 0, \forall z$ and the quadratic term multiplying it, we conclude that for any choice of the decision variable $c_z$, \eqref{eq.tightenedConstr} is a tightened version of the complexity constraint of $\mathds{P}1_1$, which is \eqref{eq.P2constrA}. As a result, the maximum of $\mathds{P}1_2$ is lower or equal than that of $\mathds{P}1_1$. 
+	where the matrix identity \eqref{eq.matrix_inv_lemma} was used in $(i)$ along with $P^2_{\mathds{X} }(z) = k(z,z) - K_{z \mathds{X} } K_{\mathds{X} \mathds{X} }^{-1} K_{\mathds{X} z}$. In $(ii)$, the definitions of $\bar c$ and $\mathds{X} $ were used. Thanks to $P_{\mathds{X} }(z) \geq 0, \forall z$ \citep{karvonen2022error} and the quadratic term multiplying it, we conclude that for any choice of the decision variable $c_z$, \eqref{eq.tightenedConstr} is a tightened version of the complexity constraint of $\mathds{P}1_1$. As a result, the maximum of $\mathds{P}1_2$ is lower or equal than that of $\mathds{P}1_1$. 
 \end{my_proof}
 
 \begin{my_proof}
@@ -1125,7 +1139,7 @@ The column vector $f_X$ is made of function evaluations $f(x_i)$, which are repe
 		\le& \, P(x) \, \sqrt{ \Gamma^2  - \rknorm{\bar{s}}^2} + \bar \delta \onenorm{K_{XX}^{-1}K_{Xx}} + \vert  \tilde{s}(x)-s(x)\vert \label{eq:bdnoisefree}\\
 		\le& \, P(x) \, \sqrt{ \Gamma^2 + \Delta - \rknorm{\tilde{s}}^2} + \bar \delta \onenorm{K_{XX}^{-1}K_{Xx}} + \vert  \tilde{s}(x)-s(x)\vert \label{eq:Deltdef}
 	\end{align}
-	with $f^\star_X$ being the vector of true function values at the sample locations in $X$ and $\delta_X$ the vector of additive measurement noise for the samples $y$. \eqref{eq:triag} follows from the triangle inequality and the additive noise property of $y$. Using the triangle inequality again, we arrive at \eqref{eq:triag2}, where $\bar s$ denotes the noise-free interpolant of $f^\star_X$. The noise-free interpolation error bound gives the estimation in the first term of \eqref{eq:bdnoisefree}, while \eqref{eq:Deltdef} follows from \cite[Lemma~1]{maddalena2021deterministic}, with $\Delta = \max_{\infnorm{\delta} \leq \bar{\delta}} (- \delta^\top K_{XX}^{-1} \delta + 2 y ^\top K_{XX}^{-1} \delta)$. A standard dualization procedure as the one presented in Appendix~\ref{app.dual} leads to the dual problem
+	with $f^\star_X$ being the vector of true function values at the sample locations in $X$ and $\delta_X$ the vector of additive measurement noise for the samples $y$. \eqref{eq:triag} follows from the triangle inequality and the additive noise property of $y$. Using the triangle inequality again, we arrive at \eqref{eq:triag2}, where $\bar s$ denotes the noise-free interpolant of $f^\star_X$. The noise-free interpolation error bound gives the estimation in the first term of \eqref{eq:bdnoisefree}, while \eqref{eq:Deltdef} follows from \cite[Lemma~1]{maddalena2021deterministic}, with $\Delta = \max_{\infnorm{\delta} \leq \bar{\delta}} (- \delta^\top K_{XX}^{-1} \delta + 2 y ^\top K_{XX}^{-1} \delta)$. A standard Lagrangian dualization procedure leads to the dual formulation
 	\begin{equation}
 		\label{eq:dualdelt}
 		\min_{\nu \in \mathbb{R}^d} \frac{1}{4} \nu^\top K_{XX} \nu + \nu^\top y + \bar{\delta} \onenorm{\nu} + y^\top K_{XX}^{-1} y

@@ -191,12 +191,13 @@ The concept of a Hamel basis is aligned with the more specific concept of a ``ba
 
 \begin{definition}
 	\textbf{(Polyhedral projection)}
-	Let $P \subset \mathbb{R}^n$ be a polyhedron described by $\{x \in \mathbb{R}^n \, | \, H x \leq h \}$ for some $H \in \mathbb{R}^{n \times m}$ and $h \in \mathbb{R}^{m}$. The projection of a point $z \in \mathbb{R}^n$ onto $P$ is defined as
+	Let $P \subset \mathbb{R}^n$ be a polyhedron described by $\{x \in \mathbb{R}^n \, | \, H x \leq h \}$ for some $H \in \mathbb{R}^{n \times m}$ and $h \in \mathbb{R}^{m}$. The projection of a point $z \in \mathbb{R}^n$ onto $P$ is defined as the vector $p^\star \in \mathbb{R}^n$
 	\begin{align}
 		\label{def.pol_proj}
-		\text{Proj}_P(x) = \argmin_{p \in \mathbb{R}^n} \ &\Vert p - z \Vert_2^2 \\
+		p^\star = \argmin_{p \in \mathbb{R}^n} \ &\Vert p - z \Vert_2^2 \\
 		\text{subj. to} \ & H p \leq h \nonumber
 	\end{align}
+	and it is usually denoted as $\text{Proj}_P(x)$.
 \end{definition}
 
 
