@@ -7,11 +7,11 @@ At its core, learning refers to the process of gathering information and using i
 %In modern machine learning, people study a number of rather abstract subjects ranging from the traits that distinguish images of muffins and chihuahuas, to the link between passengers' features and their survival likelihood in case of a ship sinking event.  
 the mathematical formalism often used in modern machine learning to study the link between examples and the underlying phenomena is statistics. This choice is convenient because it can describe the possible non-determinism of outcomes through the concepts of distributions and samples; and because it provides us with plenty of tools to carry out learning, i.e., improve our knowledge about the phenomenon through the samples at hand. In this chapter, we will however adopt a different standpoint to study the problem of learning, relying on an \textit{epistemic} description of uncertainty rather than on an aleatoric one \citep{hullermeier2021aleatoric}.
 
-When reporting physical parameters that are not exactly known, e.g. the friction coefficient between two surfaces or the leakage inductance of a transformer, it is common for engineers to specify ranges that are known to contain the \textit{true} coefficient values. Assuming that a true, invariable value exists although it is not exactly known is the epistemic way of modeling uncertainty. This approach is customary in many applied sciences and can be generalized from simple scalar parameters to maps in function spaces. The entire field of approximation theory, from which we will borrow many tools, makes constant use of this framework to derive best approximations and error bounds for their nominal models \citep{wendland2004scattered,iske2018approximation}.  Let us refer to this space as the ground-truth space (GTS), whereas the space from where our models are drawn will be called the hypothesis space (HS). An advantage of working with functions spaces is the ease of packing information into them that we might have as domain experts: take for instance the Lipschitz continuity explored in  \cite{milanese2004set,sabug2021smgo} or the weak derivatives assumptions in Sobolev GTSs by the authors of \cite{novara2022nonlinear}. In this chapter, rather than posing assumptions directly on the ground-truth, we will make use of an indirect formalism that ties the GTS to maps named \textit{kernels}. This approach guarantees the existence of a rich geometrical structure that will allow us to develop our theory.
+When reporting physical parameters that are not exactly known, e.g. the friction coefficient between two surfaces or the leakage inductance of a transformer, it is common for engineers to specify ranges that are known to contain the \textit{true} coefficient values. Assuming that a true, invariable value exists although it is not exactly known is the epistemic way of modeling uncertainty. This approach is customary in many applied sciences and can be generalized from simple scalar parameters to maps in function spaces. The entire field of approximation theory, from which we will borrow many tools, makes constant use of this framework to derive best approximations and error bounds for their nominal models \citep{wendland2004scattered,iske2018approximation}.  Let us refer to this space as the \ac{gts}, whereas the space from where our models are drawn will be called the \ac{hs}. An advantage of working with functions spaces is the ease of packing information into them that we might have as domain experts: take for instance the Lipschitz continuity explored in  \cite{milanese2004set,sabug2021smgo} or the weak derivatives assumptions in Sobolev \acp{gts} by the authors of \cite{novara2022nonlinear}. In this chapter, rather than posing assumptions directly on the ground-truth, we will make use of an indirect formalism that ties the GTS to maps named \textit{kernels}. This approach guarantees the existence of a rich geometrical structure that will allow us to develop our theory.
 
-Kernels are a fundamental building block of modern machine learning \citep{scholkopf2002learning}. They enable computing similarities in extended feature spaces while dispensing with the need of lifting the data onto them. Alternatively, they can be viewed as a non-linearity library used to empower certain linear algorithms, the canonical example being support vector machines. If kernels are used to describe simultaneously the HS and the GTS, then not only optimal models can be found, but also error-bounds can be derived for them at possibly out-of sample locations, thus guaranteeing the quality of the model predictions \citep{schaback2006kernel,kanagawa2018gaussian}. One interesting aspect of those bounds are their determinism, in that the ground-truth values cannot lie outside the established ‘prediction envelope’. Therefore, such methods could in principle be used in the engineering sciences to deterministically certify the performance or safety of algorithms that employ learned maps, which is remarkable due to their not being asymptotic, but finite-sample guarantees. There is however one strong limiting factor that hinders its applicability, namely the absence of a noise model \citep[§11]{wendland2004scattered}. Even though noise-free samples are to be expected in domains such as computer graphics and  computer simulations, where these techniques are usually applied  (see e.g. \citep{sarra2005adaptive,nikan2022numerical}), corrupted data is prevalent in electronics, robotics, building automation, among other fields. 
+Kernels are a fundamental building block of modern machine learning \citep{scholkopf2002learning}. They enable computing similarities in extended feature spaces while dispensing with the need of lifting the data onto them. Alternatively, they can be viewed as a non-linearity library used to empower certain linear algorithms, the canonical example being support vector machines. If kernels are used to describe simultaneously the \ac{hs} and the \ac{gts}, then not only optimal models can be found, but also error-bounds can be derived for them at possibly out-of sample locations, thus guaranteeing the quality of the model predictions \citep{schaback2006kernel,kanagawa2018gaussian}. One interesting aspect of those bounds are their determinism, in that the ground-truth values cannot lie outside the established ‘prediction envelope’. Therefore, such methods could in principle be used in the engineering sciences to deterministically certify the performance or safety of algorithms that employ learned maps, which is remarkable due to their not being asymptotic, but finite-sample guarantees. There is however one strong limiting factor that hinders its applicability, namely the absence of a noise model \citep[§11]{wendland2004scattered}. Even though noise-free samples are to be expected in domains such as computer graphics and  computer simulations, where these techniques are usually applied  (see e.g. \citep{sarra2005adaptive,nikan2022numerical}), corrupted data is prevalent in electronics, robotics, building automation, among other fields. 
 
-In this chapter, we will explore kernel learning with hard guarantees. Our contributions, which are mainly reported in Section~\ref{sec.quant_uncert}, consist in posing and solving an uncertainty quantification (UQ) problem to compute envelopes that bound the unknown ground-truth values. We highlight that the UQ problem does not require defining a nominal model, being thus agnostic to its choice. As opposed to other deterministic bounds found in the literature (see the classical book \citep[§11]{wendland2004scattered}), ours take encompass an additive noise with bounded levels, a description that is not popular in general machine learning, but certainly relevant in domains such as robust analysis and control. A number of examples are presented at the end to illustrate different use-cases for the proposed theory, followed by concluding remarks and ideas for future investigations.
+In this chapter, we will explore kernel learning with hard guarantees. Our contributions, which are mainly reported in Section~\ref{sec.quant_uncert}, consist in posing and solving an \ac{uq} problem to compute envelopes that bound the unknown ground-truth values. We highlight that the \ac{uq} problem does not require defining a nominal model, being thus agnostic to its choice. As opposed to other deterministic bounds found in the literature (see the classical book \citep[§11]{wendland2004scattered}), ours take encompass an additive noise with bounded levels, a description that is not popular in general machine learning, but certainly relevant in domains such as robust analysis and control. A number of examples are presented at the end to illustrate different use-cases for the proposed theory, followed by concluding remarks and ideas for future investigations.
 
 %\footnote{Approximation theory is not in complete opposition to statistical learning. Indeed, we can define the function of interest as the conditional \citep{temlyakov2008approximation}.}
 % See also the work of \cite{belkin2018approximation} comparing the two views.}
@@ -42,7 +42,7 @@ Our goal in to learn maps of the form $f: \mathcal{X} \rightarrow \mathbb{R}$ an
 	Aside from the last definition, there exist broader classes of kernel functions such as the \textit{conditionally positive-definite} one \cite[§2.4]{scholkopf2002learning}\cite[§8]{wendland2004scattered}. In addition, one can also generalize the co-domain $k$ to be the field of complex numbers $\mathbb{C}$.
 \end{remark}
 
-Instances of positive-definite kernel functions with index set $\mathcal{X} = \mathbb{R}^n$ are the linear, the squared-exponential (also known as Gaussian), the exponential (equivalent to the Matern12), the polynominal and the cosine kernels respectively given by
+Instances of \ac{pd} kernel functions with index set $\mathcal{X} = \mathbb{R}^n$ are the linear, the squared-exponential (also known as Gaussian), the exponential (equivalent to the Matern12), the polynominal and the cosine kernels respectively given by
 \begin{align}
 	&k_\text{lin}(x,x') = x \cdot x' \\
 	&k_\text{se}(x,x') = \exp\left(-\frac{\Vert x-x'\Vert^2}{2\ell}\right) \label{eq.se_kernel}\\
@@ -50,9 +50,9 @@ Instances of positive-definite kernel functions with index set $\mathcal{X} = \m
 	&k_\text{pol}(x,x') = \left(\sigma^2 (x \cdot x') + \gamma \right)^d \\
 	&k_\text{cos}(x,x') = \cos\left(2\pi \sum_i ([x]_i-[x']_i)/\ell \right)
 \end{align}
-where $\cdot$ and $\Vert \cdot \Vert$ denote the usual inner-product  and 2-norm in $\mathbb{R}^n$, respectively; and the constants $\ell \in \mathbb{R}_{>0}$, $\sigma, \gamma\in \mathbb{R}$ are the so-called \textit{hyperparameters}. Plots of these functions are presented in Figure~\ref{fig.pd_kernels}. A more complete list of PD kernels and their mathematical properties can be found in Appendix~A. 
+where $\cdot$ and $\Vert \cdot \Vert$ denote the usual inner-product  and 2-norm in $\mathbb{R}^n$, respectively; and the constants $\ell \in \mathbb{R}_{>0}$, $\sigma, \gamma\in \mathbb{R}$ are the so-called \textit{hyperparameters}. Plots of these functions are presented in Figure~\ref{fig.pd_kernels}. A more complete list of \ac{pd} kernels and their mathematical properties can be found in Appendix~A. 
 
-In order to construct surrogate models for the unknown $f$, one could partially evaluate a given $k$ to match their domains and co-domains. In other words, fix one of its arguments so that $k(z,\cdot): \mathcal{X} \rightarrow \mathbb{R}, x \mapsto k(z,x)$ for some $z \in \mathcal{X}$. Indeed, this was the approach taken to draw the plots in Figure~\ref{fig.pd_kernels}. Approximating the unknown $f$ with a single partially evaluated kernel however appears to be overly restrictive. A sensible next step would be to consider linear combinations of such kernel functions. It turns out that every PD kernel has a function space associated with it that contains these linear combinations and is endowed with plenty of useful geometric structure. The following concepts are presented next to set up the stage for defining this special hypothesis space, the \textit{reproducing kernel Hilbert space}.
+In order to construct surrogate models for the unknown $f$, one could partially evaluate a given $k$ to match their domains and co-domains. In other words, fix one of its arguments so that $k(z,\cdot): \mathcal{X} \rightarrow \mathbb{R}, x \mapsto k(z,x)$ for some $z \in \mathcal{X}$. Indeed, this was the approach taken to draw the plots in Figure~\ref{fig.pd_kernels}. Approximating the unknown $f$ with a single partially evaluated kernel however appears to be overly restrictive. A sensible next step would be to consider linear combinations of such kernel functions. It turns out that every \ac{pd} kernel has a function space associated with it that contains these linear combinations and is endowed with plenty of useful geometric structure. The following concepts are presented next to set up the stage for defining this special hypothesis space, the \textit{reproducing kernel Hilbert space}.
 
 \begin{figure}[t]
 	\centering
@@ -71,7 +71,7 @@ Feature maps $\Phi$ are central in machine learning, allowing one to represent t
 
 \begin{proposition}
 	\label{thm.pd_kernels_feature_maps}
-	\textbf{(PD kernels have feature maps)} 
+	\textbf{(\ac{pd} kernels have feature maps)} 
 	Let $k:\mathcal{X} \times \mathcal{X} \rightarrow \mathbb{R} $ be a positive-definite kernel. Then there exists a Hilbert space $\mathbb{H}$ endowed with an inner product $\langle \cdot,\cdot \rangle_\mathbb{H}$ and a mapping $\Phi :  \mathcal{X} \rightarrow \mathbb{H}$ such that 
 	\begin{equation}
 		\label{eq.kernels_feat_maps}
@@ -90,19 +90,19 @@ The mappings $\Phi$ above as well as the $\mathbb{H}$ spaces are in general not 
 \begin{definition}
 	\label{def.rkhs}
 	\textbf{(Reproducing kernel Hilbert space)} 
-	Let $\mathcal{X} \neq \emptyset$ and $\mathbb{R}^\mathcal{X}$ the set of functions mapping $\mathcal{X}$ to $\mathbb{R}$. The subset $\mathcal{H} \subset \mathbb{R}^\mathcal{X}$ is called a reproducing kernel Hilbert space (RKHS) if it is a Hilbert space and if $\forall x \in \mathcal{X}$ the evaluation functionals
+	Let $\mathcal{X} \neq \emptyset$ and $\mathbb{R}^\mathcal{X}$ the set of functions mapping $\mathcal{X}$ to $\mathbb{R}$. The subset $\mathcal{H} \subset \mathbb{R}^\mathcal{X}$ is called a \ac{rkhs} if it is a Hilbert space and if $\forall x \in \mathcal{X}$ the evaluation functionals
 	\begin{equation}
 		L_x: \mathcal{H} \rightarrow \mathbb{R}, \; L_x(f) \mapsto f(x), \ \forall f\in \mathcal{H}
 	\end{equation}
 	are bounded.
 \end{definition}
 
-In order to see how useful such a property is, consider a sequence $\{f_n\}_{n=1}^\infty$ within a certain Hilbert function space $\mathbb{H} \subset \mathbb{R}^\mathcal{X}$. Intuitively, one would expect that if $f_n \rightarrow f^\star$ in $\mathbb{H}$, then the values $f_n(x)$ attained by the sequence would converge to the values $f^\star(x)$. Yet, this is not always the case (see Example~\ref{ex.appendix_convergence} in Appendix~\ref{app.elements_analysis_algebra}). If, on the other hand, the evaluation functionals are bounded as in Definition~\ref{def.rkhs}, then the connection between convergence in the function space and the pointwise convergence of functions is guaranteed. Indeed, if $\{f_n\}_{n=1}^\infty$ and $f^\star$ are members of an RKHS $\mathcal{H}$, then $|f_n(x)-f^\star(x)| = | L_x(f_n) - L_x(f^\star)|  \leq \Vert L_x \Vert \rknorm{f_n - f^\star}$, where $\Vert L_x \Vert $ is the operator norm of $L_x$ that is guaranteed by Definiton~\ref{def.rkhs} to be a finite number. As a result, if $\rknorm{f_n - f^\star} \rightarrow 0$, the right-hand side of the inequality goes to zero, and so does the pointwise difference $|f_n(x)-f^\star(x)|$. Therefore, function convergence in an RKHS implies pointwise convergence, matching our intuition.
+In order to see how useful such a property is, consider a sequence $\{f_n\}_{n=1}^\infty$ within a certain Hilbert function space $\mathbb{H} \subset \mathbb{R}^\mathcal{X}$. Intuitively, one would expect that if $f_n \rightarrow f^\star$ in $\mathbb{H}$, then the values $f_n(x)$ attained by the sequence would converge to the values $f^\star(x)$. Yet, this is not always the case (see Example~\ref{ex.appendix_convergence} in Appendix~\ref{app.elements_analysis_algebra}). If, on the other hand, the evaluation functionals are bounded as in Definition~\ref{def.rkhs}, then the connection between convergence in the function space and the pointwise convergence of functions is guaranteed. Indeed, if $\{f_n\}_{n=1}^\infty$ and $f^\star$ are members of an \ac{rkhs} $\mathcal{H}$, then $|f_n(x)-f^\star(x)| = | L_x(f_n) - L_x(f^\star)|  \leq \Vert L_x \Vert \rknorm{f_n - f^\star}$, where $\Vert L_x \Vert $ is the operator norm of $L_x$ that is guaranteed by Definiton~\ref{def.rkhs} to be a finite number. As a result, if $\rknorm{f_n - f^\star} \rightarrow 0$, the right-hand side of the inequality goes to zero, and so does the pointwise difference $|f_n(x)-f^\star(x)|$. Therefore, function convergence in an \ac{rkhs} implies pointwise convergence, matching our intuition.
 
 \begin{proposition}
 	\label{prop.unique_reprod_kernel}
-	\textbf{(Every RKHS has a unique PD reproducing kernel)} 
-	Let $\mathcal{H} \subset \mathbb{R}^\mathcal{X}$ be an RKHS. Then, the map $k: \mathcal{X} \times \mathcal{X} \rightarrow \mathbb{R}$, $k(x,x') := \langle L_x, L_{x'} \rangle_\mathcal{H}$ is a positive-definite kernel. Furthermore, $k$ is the unique map to satisfy the reproducing property, i.e., for any $x \in \mathcal{X}$, $k(x,\cdot) \in \rkhs$ and
+	\textbf{(Every \ac{rkhs} has a unique \ac{pd} reproducing kernel)} 
+	Let $\mathcal{H} \subset \mathbb{R}^\mathcal{X}$ be an \ac{rkhs}. Then, the map $k: \mathcal{X} \times \mathcal{X} \rightarrow \mathbb{R}$, $k(x,x') := \langle L_x, L_{x'} \rangle_\mathcal{H}$ is a positive-definite kernel. Furthermore, $k$ is the unique map to satisfy the reproducing property, i.e., for any $x \in \mathcal{X}$, $k(x,\cdot) \in \rkhs$ and
 	\begin{equation}
 		\rkinner{f}{k(x,\cdot)} = L_x(f) = f(x), \ \forall f \in \rkhs
 		\label{eq.reproducing_property}
@@ -116,8 +116,8 @@ In order to see how useful such a property is, consider a sequence $\{f_n\}_{n=1
 
 \begin{proposition}
 	\label{prop.unique_rkhs}
-	\textbf{(Every PD kernel has a unique RKHS)} 
-	Let $k: \mathcal{X} \times \mathcal{X} \rightarrow \mathbb{R}$ be a PD kernel. If $k$ is the reproducing kernel of an RKHS $\rkhs_A$ and of another RKHS $\rkhs_B$, then $\rkhs_A = \rkhs_B$.
+	\textbf{(Every \ac{pd} kernel has a unique \ac{rkhs})} 
+	Let $k: \mathcal{X} \times \mathcal{X} \rightarrow \mathbb{R}$ be a \ac{pd} kernel. If $k$ is the reproducing kernel of an \ac{rkhs} $\rkhs_A$ and of another \ac{rkhs} $\rkhs_B$, then $\rkhs_A = \rkhs_B$.
 \end{proposition}
 
 \begin{my_proof}
@@ -125,7 +125,7 @@ In order to see how useful such a property is, consider a sequence $\{f_n\}_{n=1
 	\citep[Theorem~4.21]{steinwart2008svm_book}.
 \end{my_proof}
 
-We understand from Propositions~\ref{prop.unique_reprod_kernel} and \ref{prop.unique_rkhs} that a special relationship exists between kernel and its RKHS. Nevertheless, it is still unclear from Definition~\ref{def.rkhs} alone how a given $k$ influences or defines the members of $\rkhs$. To shed light on the matter, it helps to explicitly construct $\rkhs$ starting from a given $k$. Consider the so-called \textit{pre-Hilbert space}
+We understand from Propositions~\ref{prop.unique_reprod_kernel} and \ref{prop.unique_rkhs} that a special relationship exists between kernel and its \ac{rkhs}. Nevertheless, it is still unclear from Definition~\ref{def.rkhs} alone how a given $k$ influences or defines the members of $\rkhs$. To shed light on the matter, it helps to explicitly construct $\rkhs$ starting from a given $k$. Consider the so-called \textit{pre-Hilbert space}
 \begin{empheq}[box={\mymathbox[colback=black!2,drop small lifted shadow, sharp corners]}]{align}
 	\rkhs_0 :=& \; \text{span} \, \{ k(x,\cdot) \, | \, x \in \mathcal{X} \} \\
  	=&  \; \left\{ \sum_{i=1}^n c_i \, k(x_i,\cdot) \, | \, n \in \mathbb{N}, c_i \in \mathbb{R}, x_i \in \mathcal{X} \right\} \label{eq.pre_rkhs}
@@ -142,7 +142,7 @@ thus encompassing all limit points\footnote{
 %
 Closing $\mathcal{H}_0$ requires defining an inner-product on the superset $\rkhs$ that is consistent with the one present in the subset $\mathcal{H}_0$. Also, the closure of a set is always closed, which guarantees that sequences within $\mathcal{H}$ cannot converge to functions outside of it.
 %
-}. Finally, the function space $\mathcal{H}$ defined in \eqref{eq.rkhs_closure} can then be shown to be a valid RKHS\footnote{
+}. Finally, the function space $\mathcal{H}$ defined in \eqref{eq.rkhs_closure} can then be shown to be a valid \ac{rkhs}\footnote{
 %
 For a proof of this statement, the reader is referred to \cite[§3]{berlinet2011reproducing} or to \cite[§4]{sejdinovic2012rkhs} for a more step-by-step pedagogical exposition.
 %
@@ -154,10 +154,10 @@ The questions of how expressive RKHSs can be still lingers on. To better examine
 \begin{definition}
 	\textbf{(Universal kernel)}
 	\label{def.universal_kernel}
-	Let $k$ be a continuous PD kernel and the set $\mathcal{X}$ be a compact metric space. Then $k$ is called universal if its RKHS $\rkhs \subset \mathbb{R}^\mathcal{X}$ is dense in the space of real-valued continuous functions $C(\mathcal{X}) \subset \mathbb{R}^\mathcal{X}$ with respect to the maximum norm $\Vert \cdot \Vert_\infty$.
+	Let $k$ be a continuous \ac{pd} kernel and the set $\mathcal{X}$ be a compact metric space. Then $k$ is called universal if its \ac{rkhs} $\rkhs \subset \mathbb{R}^\mathcal{X}$ is dense in the space of real-valued continuous functions $C(\mathcal{X}) \subset \mathbb{R}^\mathcal{X}$ with respect to the maximum norm $\Vert \cdot \Vert_\infty$.
 \end{definition}
 
-The above definition guarantees that for any target function $g \in C(\mathcal{X})$ and any tolerable error $\epsilon > 0$, there exists an $f$ in the RKHS of a universal kernel such that their mismatch is bounded $| f(x) - g(x) | \leq \epsilon, \forall x \in \mathcal{X}$.
+The above definition guarantees that for any target function $g \in C(\mathcal{X})$ and any tolerable error $\epsilon > 0$, there exists an $f$ in the \ac{rkhs} of a universal kernel such that their mismatch is bounded $| f(x) - g(x) | \leq \epsilon, \forall x \in \mathcal{X}$.
 % REFINE
 All in all, the universality property is an indication of how rich a hypothesis space is, thus reassuring the user that little bias error will be introduced by his choice of model class.
 
@@ -171,12 +171,12 @@ All in all, the universality property is an indication of how rich a hypothesis 
 	\cite[Corollary~4.58]{steinwart2008svm_book}.
 \end{my_proof}
 
-In contrast with Proposition~\ref{prop.univ_kernels}, some results on the restrictiveness of RKHSs can also be found in the literature. In \cite{steinwart2020_no_rkhs_cont_func} for example, the author shows that no RKHS can contain $C(X)$. On a looser note, some authors argue that members of the squared-exponential kernel \eqref{eq.squared_exponential} has an $\rkhs$ that is too smooth when compared to alternative hypothesis spaces that are also associated with the same kernel (see the discussion in \cite[§4]{kanagawa2018gaussian}). For a thorough exposition of universal kernels, the reader is referred to \cite{micchelli2006universal}. Lastly, we underline that other model classes in machine learning also enjoy the same universality properties that kernels do, notable certain architectures of deep neural networks \citep{kidger2020universal}.
+In contrast with Proposition~\ref{prop.univ_kernels}, some results on the restrictiveness of RKHSs can also be found in the literature. In \cite{steinwart2020_no_rkhs_cont_func} for example, the author shows that no \ac{rkhs} can contain $C(X)$. On a looser note, some authors argue that members of the squared-exponential kernel \eqref{eq.squared_exponential} has an $\rkhs$ that is too smooth when compared to alternative hypothesis spaces that are also associated with the same kernel (see the discussion in \cite[§4]{kanagawa2018gaussian}). For a thorough exposition of universal kernels, the reader is referred to \cite{micchelli2006universal}. Lastly, we underline that other model classes in machine learning also enjoy the same universality properties that kernels do, notable certain architectures of deep neural networks \citep{kidger2020universal}.
 
 \begin{landscape}
 \begin{figure}
 	\includegraphics{../images/chap2_rkhs_ex.pdf} 
-	\caption{Members of the exponential RKHS and their respective norms.}
+	\caption{Members of the exponential \ac{rkhs} and their respective norms.}
 	\label{fig.rkhs_ex}
 \end{figure}
 \end{landscape}
@@ -204,7 +204,7 @@ In the absence of measurement noise, i.e., when $\epsilon_i = 0$, the outputs $y
 \begin{proposition}
 	\label{prop.MNI}
 	\textbf{(Minimum-norm interpolation (MNI))}
-	Let $\{(x_i,y_i)\}_{i=1}^n$ be a collection of points such that $x_i \in \mathbb{R}^m$ and $y_i \in \mathbb{R}$. Let $k$ be a PD kernel and $\rkhs \subset \mathbb{R}^\mathcal{X}$ its RKHS. Then, the variational problem
+	Let $\{(x_i,y_i)\}_{i=1}^n$ be a collection of points such that $x_i \in \mathbb{R}^m$ and $y_i \in \mathbb{R}$. Let $k$ be a \ac{pd} kernel and $\rkhs \subset \mathbb{R}^\mathcal{X}$ its \ac{rkhs}. Then, the variational problem
 	\begin{equation}
 		\label{eq.min_norm_interp}
 			\bar{f} \in \arginf_{f \in \mathcal{H}} \left\{ \rknorm{f}^2 : f(x_i) = y_i, \, i = 1,\dots,n \right\}
@@ -224,7 +224,7 @@ To tackle the approximation problem in the presence of measurement noise, a comp
 
 \begin{proposition}
 	\textbf{(Kernel ridge regression (KRR))}
-	Let $\{(x_i,y_i)\}_{i=1}^n$ be a collection of points such that $x_i \in \mathcal{X}$ for a compact $\mathcal{X} \subset \mathbb{R}^m$ and $y_i \in \mathbb{R}$. Let $k$ be a SPD kernel and $\rkhs \subset \mathbb{R}^\mathcal{X}$ its RKHS. Then, the variational problem
+	Let $\{(x_i,y_i)\}_{i=1}^n$ be a collection of points such that $x_i \in \mathcal{X}$ for a compact $\mathcal{X} \subset \mathbb{R}^m$ and $y_i \in \mathbb{R}$. Let $k$ be a SPD kernel and $\rkhs \subset \mathbb{R}^\mathcal{X}$ its \ac{rkhs}. Then, the variational problem
 	\begin{equation}
 		\inf_{f\in \rkhs} \; \frac{1}{n} \sum_{i=1}^n (y_i - f(x_i))^2 + \lambda \Vert f \Vert_\rkhs^2
 		\label{eq.krr_model}
@@ -237,7 +237,7 @@ Original representer theorem \cite{kimeldorf1971some}.
 
 \begin{theorem}
 	\textbf{(The representer theorem)}
-	Let $\{x_i,y_i\}_{i=1}^n$ be a collection of points such that $x_i \in \mathcal{X}$ for an arbitrary $\mathcal{X}$ and $y_i \in \mathbb{R}$. Let $k$ be a PD kernel and $\rkhs \subset \mathbb{R}^\mathcal{X}$ its RKHS. Consider an arbitrary function $c : (\mathcal{X} \times R^2)^n \rightarrow \mathbb{R} \cup \{\infty\}$ and a strictly monotonic increasing function $\Omega: [0,\infty) \rightarrow \mathbb{R}$. Then, if $f \in \rkhs$ is a minimizer of the variational problem
+	Let $\{x_i,y_i\}_{i=1}^n$ be a collection of points such that $x_i \in \mathcal{X}$ for an arbitrary $\mathcal{X}$ and $y_i \in \mathbb{R}$. Let $k$ be a \ac{pd} kernel and $\rkhs \subset \mathbb{R}^\mathcal{X}$ its RKHS. Consider an arbitrary function $c : (\mathcal{X} \times R^2)^n \rightarrow \mathbb{R} \cup \{\infty\}$ and a strictly monotonic increasing function $\Omega: [0,\infty) \rightarrow \mathbb{R}$. Then, if $f \in \rkhs$ is a minimizer of the variational problem
 	\begin{equation}
 		\label{eq.representer_theorem_general_loss}
 		\inf_{f\in \rkhs} c((x_1,y_1,f(x_1)),\dots,(x_n,y_n,f(x_n))) + \Omega(\Vert f \Vert_\rkhs)
@@ -900,11 +900,11 @@ Members $f \in \rkhs$ are either finite weighted sums of partially evaluated ker
 	&= \left\langle \sum_{i=1}^N \alpha_i k(x_i,\cdot), \sum_{i=1}^N \alpha_i k(x_i,\cdot) \right\rangle_\rkhs \label{eq.rkhs_norm_eq2} \\
 	&= \alpha^\top K_{XX} \alpha \label{eq.rkhs_norm_eq3}
 \end{align}
-where \eqref{eq.rkhs_norm_eq1} is the RKHS norm definition, \eqref{eq.rkhs_norm_eq2} is the inner-product definition, and \eqref{eq.rkhs_norm_eq3} follows from the inner-product linearity and from the reproducing property of kernels (see \eqref{eq.reproducing_property}). As a result, the norm $\Vert f \Vert_\rkhs$ can be exactly and easily computed as long as we have at hand the weights $\alpha$ that define $f$.
+where \eqref{eq.rkhs_norm_eq1} is the \ac{rkhs} norm definition, \eqref{eq.rkhs_norm_eq2} is the inner-product definition, and \eqref{eq.rkhs_norm_eq3} follows from the inner-product linearity and from the reproducing property of kernels (see \eqref{eq.reproducing_property}). As a result, the norm $\Vert f \Vert_\rkhs$ can be exactly and easily computed as long as we have at hand the weights $\alpha$ that define $f$.
 
-In practice, it is hard to imagine a situation where the coefficients $\alpha$ would be known for a given physical system. Suppose however that we have a dataset at hand $\{(x_i,f_{x_i})\}\}_{i=1}^n$, where $f_{x_i} = f(x_i)$. The inputs $x_i$ need to be pairwise-distinct. Assume that $k$ is SPD and consider the function $s_n(x) := \sum_{i=1}^n \alpha_i k(x_i,x)$, $\alpha = K_{XX}^{-1} f_X$, which reproduces our dataset at every input, i.e., $s_n(x_i) = f_{x_i}$. According to the well-known optimal recovery property \cite[§8.3]{iske2018approximation}, $s_n$ not only interpolates the dataset, but also attains a minimum RKHS norm while doing so  (Proposition~\ref{prop.MNI}) and, moreover, $\Vert s_n \Vert_\rkhs \leq \Vert f \Vert_\rkhs$ for any number of samples $n$. In view of the quadratic form \eqref{eq.rkhs_norm_eq3}, it is evident that for any new pair $(x_{n+1},f_{x_{n+1}})$ added to the dataset, $\Vert s_{n+1} \Vert_\rkhs \geq \Vert s_n \Vert_\rkhs$ holds. One can finally show that if samples are acquired in such a way to fill the domain, then $\Vert f \Vert_\rkhs$ is the least upper bound of the $\Vert s_n \Vert_\rkhs$ sequence and, from the monotone convergence theorem, $\Vert s_n \Vert_\rkhs \rightarrow \Vert f \Vert_\rkhs$ is guaranteed.
+In practice, it is hard to imagine a situation where the coefficients $\alpha$ would be known for a given physical system. Suppose however that we have a dataset at hand $\{(x_i,f_{x_i})\}\}_{i=1}^n$, where $f_{x_i} = f(x_i)$. The inputs $x_i$ need to be pairwise-distinct. Assume that $k$ is SPD and consider the function $s_n(x) := \sum_{i=1}^n \alpha_i k(x_i,x)$, $\alpha = K_{XX}^{-1} f_X$, which reproduces our dataset at every input, i.e., $s_n(x_i) = f_{x_i}$. According to the well-known optimal recovery property \cite[§8.3]{iske2018approximation}, $s_n$ not only interpolates the dataset, but also attains a minimum \ac{rkhs} norm while doing so  (Proposition~\ref{prop.MNI}) and, moreover, $\Vert s_n \Vert_\rkhs \leq \Vert f \Vert_\rkhs$ for any number of samples $n$. In view of the quadratic form \eqref{eq.rkhs_norm_eq3}, it is evident that for any new pair $(x_{n+1},f_{x_{n+1}})$ added to the dataset, $\Vert s_{n+1} \Vert_\rkhs \geq \Vert s_n \Vert_\rkhs$ holds. One can finally show that if samples are acquired in such a way to fill the domain, then $\Vert f \Vert_\rkhs$ is the least upper bound of the $\Vert s_n \Vert_\rkhs$ sequence and, from the monotone convergence theorem, $\Vert s_n \Vert_\rkhs \rightarrow \Vert f \Vert_\rkhs$ is guaranteed.
 
-The discussion above showed that the RKHS norm $\Vert f \Vert_\rkhs$ can indeed be estimated from below from samples $\{(x_i,f_{x_i})\}_{i=1}^n$. This is done by simply evaluating the norm of the interpolant for which we know the weights $\alpha$
+The discussion above showed that the \ac{rkhs} norm $\Vert f \Vert_\rkhs$ can indeed be estimated from below from samples $\{(x_i,f_{x_i})\}_{i=1}^n$. This is done by simply evaluating the norm of the interpolant for which we know the weights $\alpha$
 \begin{equation}
 \Vert s_n \Vert_\rkhs^2 = \alpha^\top K_{XX} \alpha = f_{X}^\top K_{XX}^{-1} f_{X}
 \end{equation}
@@ -915,11 +915,11 @@ The more samples we have, the closer the quadratic form will be from the target 
 	%\hspace{1pt}
 	\includegraphics[scale=1]{../images/norm_est.pdf} 
 	\includegraphics[scale=1]{../images/norm_value.pdf} %\hspace{8pt}
-	\caption{Estimating the RKHS norm of a function (left) from samples. The norm value of the MNI interpolant for an increasing number of samples (right) is shown to gradually approach the RKHS norm of the ground-truth.}
+	\caption{Estimating the \ac{rkhs} norm of a function (left) from samples. The norm value of the MNI interpolant for an increasing number of samples (right) is shown to gradually approach the \ac{rkhs} norm of the ground-truth.}
 	\label{fig.appendice_norm_estimation}
 \end{figure}
 
-Let $k:\mathbb{R}\times \mathbb{R} \rightarrow \mathbb{R}$ be the squared-exponential with lengthscale $\ell = 0.5$. A member $f \in \mathcal{H}$ of its RKHS is shown in Figure~\ref{fig.appendice_norm_estimation} (left), being composed of $100$ partially evaluated kernels whose centers and weights were randomly generated. The exact $\Vert f\Vert_\rkhs$ value was computed through \eqref{eq.rkhs_norm_eq3}, yielding $\Vert f\Vert_\rkhs = 11.24$. Next, the same quantity was estimated through data simply drawn randomly from the domain, following a uniform distribution. The associated $\Vert s_n \Vert_\rkhs$ from $n=1$ to $60$ is shown in Figure~\ref{fig.appendice_norm_estimation} (right). At around $n=42$, the lower estimate is seen to have essentially reached the $\Vert f \Vert_\rkhs$ level, capturing all the complexity there was to capture. Lastly, we selected a subset of only six of the previously samples points, those closer to some of the function peaks, and computed the associated interpolant norm. The value of 10.02 was obtained, i.e., 89\% of $\Vert f \Vert_\rkhs$, illustrating that a few well-located samples can already offer us a reasonable measure of the unknown ground-truth RKHS norm.
+Let $k:\mathbb{R}\times \mathbb{R} \rightarrow \mathbb{R}$ be the squared-exponential with lengthscale $\ell = 0.5$. A member $f \in \mathcal{H}$ of its \ac{rkhs} is shown in Figure~\ref{fig.appendice_norm_estimation} (left), being composed of $100$ partially evaluated kernels whose centers and weights were randomly generated. The exact $\Vert f\Vert_\rkhs$ value was computed through \eqref{eq.rkhs_norm_eq3}, yielding $\Vert f\Vert_\rkhs = 11.24$. Next, the same quantity was estimated through data simply drawn randomly from the domain, following a uniform distribution. The associated $\Vert s_n \Vert_\rkhs$ from $n=1$ to $60$ is shown in Figure~\ref{fig.appendice_norm_estimation} (right). At around $n=42$, the lower estimate is seen to have essentially reached the $\Vert f \Vert_\rkhs$ level, capturing all the complexity there was to capture. Lastly, we selected a subset of only six of the previously samples points, those closer to some of the function peaks, and computed the associated interpolant norm. The value of 10.02 was obtained, i.e., 89\% of $\Vert f \Vert_\rkhs$, illustrating that a few well-located samples can already offer us a reasonable measure of the unknown ground-truth \ac{rkhs} norm.
 
 Up to this point, only noiseless samples were consider. Suppose now the data come in the form $\{(x_i,y_i)\}_{i=1}^n$ with $x_i$ pairwise distinct and $y_i=f(x_i) + \delta_i$. Let the additive noise be bounded by some known value $\bar \delta \geq |\delta_i|$ for all $i$. Since we do not have access to the evaluations of $f$ anymore, $\Vert s_n \Vert_\rkhs$ cannot be computed. If we naively interpolate the data with the model $\tilde s_n(x) := \sum_{i=1}^n \alpha_i k(x_i,x)$, $\alpha = K_{XX}^{-1} y$, the resulting norm $\Vert \tilde s_n \Vert_\rkhs^2 = y^\top K_{XX}^{-1}y$ can be either larger or smaller than its noise-free counterpart. The mismatch between the two will depend on how each $\delta_i$ will disturb the samples, and its maximum effects can be exactly computed.
 
