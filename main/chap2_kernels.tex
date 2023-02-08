@@ -822,7 +822,7 @@ Indeed, the obtained solutions for the approximate problems were $13.21$, $11.36
 	\centering
 	\includegraphics[scale=0.25]{../images/chap2_numex_ex2_gt.pdf} \\
 	\includegraphics[scale=0.25]{../images/chap2_numex_ex2_res.pdf}
-	\caption{Solutions and feasible sets (shaded areas) of the surrogate optimization problems, i.e., \eqref{eq:rto} with the constraint replaced by its optimal upper bound C$(x) \leq -10$. The individual solutions are denoted by the yellow, orange and red triangles and stars. The true optimum is depicted as a black star.}
+	\caption{Solutions and feasible sets (shaded areas) of the surrogate optimization problems, i.e., \eqref{eq:rto} with the constraint replaced by its optimal upper bound C$(x) \leq -10$. The individual solutions are denoted by the yellow, orange and red triangles and stars. The true optimum is indicated by a black star.}
 	\label{fig:constraints}
 \end{figure*}
 
@@ -862,7 +862,8 @@ Predictions and the system angular velocity evolution from two different initial
 	\includegraphics[scale=0.25]{../images/chap2_numex_ex4_A.pdf}
 	\includegraphics[scale=0.25]{../images/chap2_numex_ex4_B.pdf}
 	\includegraphics[scale=0.25]{../images/chap2_numex_ex4_C.pdf}
-	\caption{A comparison between the optimal bounds (blue) and the closed-form sub-optimal ones (green). The 2D ground-truth was sliced at $z_1 = -3$ and is shown in dashed black.}
+	\caption{Left: Nominal kernel-MPC predictions (dashed) and closed-loop trajectory (solid). Center: KPC predictions (dashed) and closed-loop trajectory (solid). Right: KPC full open-loop predictions, confidence intervals, and initial points depicted as circular markers. %The nominal kernel-MPC predictions satisfy the constraints, but the real system violates them. KPC leads to a safe operation without constraint violations.
+	}
 	\label{fig.PENDULUM}
 \end{figure}
 	
@@ -883,7 +884,7 @@ We envision multiple future investigations and extensions of the theory presente
 \subsection{Estimating kernel hyperparameters}
 \label{sec.appendix_hyerparams}
 
-Kernel functions typically feature a number of internal constants that need to be specified by the user, the so-called \textit{hyperparameters}. Although some theoretical properties remain insensitive to the final choice of hyperparameters\footnote{For instance, the squared-exponential kernel is universal (Definition~\ref{def.universal_kernel}) regardless of the its lengthscale value. On the other hand, it is known that if $k_\ell$ is a squared-exponential kernel with lengthscale $\ell$, then $\rkhs_{k_{\ell1}}$... \mycomment{cite Ingo's book}}, the numerical stability and real-world performance of kernel algorithms highly depend on the tuning of these numbers \citep{fasshauer2011positive}. 
+Kernel functions typically feature a number of internal constants that need to be specified by the user, the so-called \textit{hyperparameters}. Although some theoretical properties remain insensitive to the final choice of hyperparameters\footnote{The squared-exponential kernel is universal (Definition~\ref{def.universal_kernel}) regardless of the its lengthscale value.}, the numerical stability and real-world performance of kernel algorithms highly depend on the tuning of these numbers \citep{fasshauer2011positive}. 
 
 One popular approach to optimizing kernel hyperparameters is to consider the log marginal likelihood objective of a Gaussian process with Gaussian measurement noise, and apply a gradient-based numerical algorithm to it \citep[§5.4.1]{williams2006gaussian}. This amounts to solving a smooth, unconstrained non-convex optimization problem to local optimality.  Two appealing ... of this approach are the continuous nature of the search and the inherent regularization properties of the objective, known to combat overfitting. 
 
@@ -915,7 +916,7 @@ The more samples we have, the closer the quadratic form will be from the target 
 	%\hspace{1pt}
 	\includegraphics[scale=1]{../images/norm_est.pdf} 
 	\includegraphics[scale=1]{../images/norm_value.pdf} %\hspace{8pt}
-	\caption{Estimating the \ac{rkhs} norm of a function (left) from samples. The norm value of the MNI interpolant for an increasing number of samples (right) is shown to gradually approach the \ac{rkhs} norm of the ground-truth.}
+	\caption{Estimating the RKHS norm of a function (left) from samples. The norm value of the MNI interpolant for an increasing number of samples (right) is shown to gradually approach the RKHS norm of the ground-truth.}
 	\label{fig.appendice_norm_estimation}
 \end{figure}
 
