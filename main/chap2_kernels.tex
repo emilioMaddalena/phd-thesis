@@ -5,13 +5,13 @@
 \section{Introduction}
 At its core, learning refers to the process of gathering information and using it to improve one's knowledge about the phenomenon under study, which we will call the ground-truth. The standing assumption is that a link is in place, tying information and the ground-truth together even if such link is partially corrupted. Information typically comes in the form of data, samples, sometimes referred to as examples, and
 %In modern machine learning, people study a number of rather abstract subjects ranging from the traits that distinguish images of muffins and chihuahuas, to the link between passengers' features and their survival likelihood in case of a ship sinking event.  
-the mathematical formalism often used in modern machine learning to study the link between examples and the underlying phenomena is statistics. This choice is convenient because it can describe the possible non-determinism of outcomes through the concepts of distributions and samples; and because it provides us with plenty of tools to carry out learning, i.e., improve our knowledge about the phenomenon through the samples at hand. In this chapter, we will however adopt a different standpoint to study the problem of learning, relying on an \textit{epistemic} description of uncertainty rather than on an aleatoric one \citep{hullermeier2021aleatoric}.
+the mathematical formalism often used in modern machine learning to study the link between examples and the ground-truth is statistics. This choice is convenient because it can describe the possible non-determinism of outcomes through the concepts of distributions and samples; and because it provides us with plenty of tools to carry out learning, i.e., to gradually improve our knowledge about the underlying phenomenon. In this chapter, we will however adopt a different standpoint to study the problem of learning, relying on an \textit{epistemic} description of uncertainty rather than on an aleatoric one \citep{hullermeier2021aleatoric}.
 
 When reporting physical parameters that are not exactly known, e.g. the friction coefficient between two surfaces or the leakage inductance of a transformer, it is common for engineers to specify ranges that are known to contain the \textit{true} coefficient values. Assuming that a true, invariable value exists although it is not exactly known is the epistemic way of modeling uncertainty. This approach is customary in many applied sciences and can be generalized from simple scalar parameters to maps in function spaces. The entire field of approximation theory, from which we will borrow many tools, makes constant use of this framework to derive best approximations and error bounds for their nominal models \citep{wendland2004scattered,iske2018approximation}.  Let us refer to this space as the \ac{gts}, whereas the space from where our models are drawn will be called the \ac{hs}. An advantage of working with functions spaces is the ease of packing information into them that we might have as domain experts: take for instance the Lipschitz continuity explored in  \cite{milanese2004set,sabug2021smgo} or the weak derivatives assumptions in Sobolev \acp{gts} by the authors of \cite{novara2022nonlinear}. In this chapter, rather than posing assumptions directly on the ground-truth, we will make use of an indirect formalism that ties the GTS to maps named \textit{kernels}. This approach guarantees the existence of a rich geometrical structure that will allow us to develop our theory.
 
-Kernels are a fundamental building block of modern machine learning \citep{scholkopf2002learning}. They enable computing similarities in extended feature spaces while dispensing with the need of lifting the data onto them. Alternatively, they can be viewed as a non-linearity library used to empower certain linear algorithms, the canonical example being support vector machines. If kernels are used to describe simultaneously the \ac{hs} and the \ac{gts}, then not only optimal models can be found, but also error-bounds can be derived for them at possibly out-of sample locations, thus guaranteeing the quality of the model predictions \citep{schaback2006kernel,kanagawa2018gaussian}. One interesting aspect of those bounds are their determinism, in that the ground-truth values cannot lie outside the established ‘prediction envelope’. Therefore, such methods could in principle be used in the engineering sciences to deterministically certify the performance or safety of algorithms that employ learned maps, which is remarkable due to their not being asymptotic, but finite-sample guarantees. There is however one strong limiting factor that hinders its applicability, namely the absence of a noise model \citep[§11]{wendland2004scattered}. Even though noise-free samples are to be expected in domains such as computer graphics and  computer simulations, where these techniques are usually applied  (see e.g. \citep{sarra2005adaptive,nikan2022numerical}), corrupted data is prevalent in electronics, robotics, building automation, among other fields. 
+Kernels are a fundamental building block of modern machine learning \citep{scholkopf2002learning}. They enable computing similarities in extended feature spaces while dispensing with the need of lifting the data onto them. Alternatively, they can be viewed as a non-linearity library used to empower certain linear algorithms, the canonical example being support vector machines. If kernels are used to describe simultaneously the \ac{hs} and the \ac{gts}, then optimal models can be found and error-bounds can be derived for them at possibly out-of sample locations, thus guaranteeing the quality of the model predictions \citep{schaback2006kernel,kanagawa2018gaussian}. One interesting aspect of those bounds are their determinism, in that the ground-truth values cannot lie outside the established ``prediction envelope''. Therefore, such methods could in principle be used in the engineering sciences to deterministically certify the performance or safety of algorithms that employ learned maps, which is also remarkable due to their not being asymptotic, but finite-sample guarantees. There is however one limiting factor that hinders its applicability, namely the absence of a noise model \citep[§11]{wendland2004scattered}. Even though noise-free samples are to be expected in domains such as computer graphics and  computer simulations, where these techniques are usually applied  (see e.g. \citep{sarra2005adaptive,nikan2022numerical}), corrupted data is prevalent in electronics, robotics, building automation, among other fields. 
 
-In this chapter, we will explore kernel learning with hard guarantees. Our contributions, which are mainly reported in Section~\ref{sec.quant_uncert}, consist in posing and solving an \ac{uq} problem to compute envelopes that bound the unknown ground-truth values. We highlight that the \ac{uq} problem does not require defining a nominal model, being thus agnostic to its choice. As opposed to other deterministic bounds found in the literature (see the classical book \citep[§11]{wendland2004scattered}), ours take encompass an additive noise with bounded levels, a description that is not popular in general machine learning, but certainly relevant in domains such as robust analysis and control. A number of examples are presented at the end to illustrate different use-cases for the proposed theory, followed by concluding remarks and ideas for future investigations.
+In this chapter, we will explore kernel learning with hard guarantees. Our contributions, which are mainly reported in Section~\ref{sec.quant_uncert}, consist in posing and solving an \ac{uq} problem to compute envelopes that bound the unknown ground-truth values. We highlight that the \ac{uq} problem does not require defining a nominal model, being thus agnostic to its choice. As opposed to other deterministic bounds found in the literature (see the classical book \citep[§11]{wendland2004scattered}), ours encompass an additive noise with bounded levels, a description that is not popular in general machine learning, but certainly relevant in domains such as robust analysis and control. A number of examples are presented at the end, illustrating different use-cases for the proposed theory, followed by concluding remarks and ideas for future investigations.
 
 %\footnote{Approximation theory is not in complete opposition to statistical learning. Indeed, we can define the function of interest as the conditional \citep{temlyakov2008approximation}.}
 % See also the work of \cite{belkin2018approximation} comparing the two views.}
@@ -20,7 +20,7 @@ In this chapter, we will explore kernel learning with hard guarantees. Our contr
 \section{The formalism of kernels}
 \label{sec.formalism_of_kernels}
 
-Our goal in to learn maps of the form $f: \mathcal{X} \rightarrow \mathbb{R}$ and, to achieve that end, we will make extensive use of auxiliary functions called kernels.
+Our goal is to learn maps of the form $f: \mathcal{X} \rightarrow \mathbb{R}$ and, to achieve that end, we will make extensive use of auxiliary functions called kernels.
 
 \begin{definition}
 	\textbf{(Kernel)} Given an arbitrary non-empty set $\mathcal{X}$, a kernel $k$ is any symmetric function of the form
@@ -50,9 +50,9 @@ Instances of \ac{pd} kernel functions with index set $\mathcal{X} = \mathbb{R}^n
 	&k_\text{pol}(x,x') = \left(\sigma^2 (x \cdot x') + \gamma \right)^d \\
 	&k_\text{cos}(x,x') = \cos\left(2\pi \sum_i ([x]_i-[x']_i)/\ell \right)
 \end{align}
-where $\cdot$ and $\Vert \cdot \Vert$ denote the usual inner-product  and 2-norm in $\mathbb{R}^n$, respectively; and the constants $\ell \in \mathbb{R}_{>0}$, $\sigma, \gamma\in \mathbb{R}$ are the so-called \textit{hyperparameters}. Plots of these functions are presented in Figure~\ref{fig.pd_kernels}. A more complete list of \ac{pd} kernels and their mathematical properties can be found in Appendix~A. 
+where $\cdot$ and $\Vert \cdot \Vert$ denote the usual inner-product  and 2-norm in $\mathbb{R}^n$, respectively; and the constants $\ell \in \mathbb{R}_{>0}$, $\sigma, \gamma\in \mathbb{R}$ are the so-called \textit{hyperparameters}. Plots of these functions are presented in Figure~\ref{fig.pd_kernels}, illustrating how diverse they can be. Additionally, the product of any two PD kernels, such as the one depicted in the figure, is also a PD kernel \citep{scholkopf2002learning}. % more complete list of \ac{pd} kernels and their mathematical properties can be found in Appendix~A. 
 
-In order to construct surrogate models for the unknown $f$, one could partially evaluate a given $k$ to match their domains and co-domains. In other words, fix one of its arguments so that $k(z,\cdot): \mathcal{X} \rightarrow \mathbb{R}, x \mapsto k(z,x)$ for some $z \in \mathcal{X}$. Indeed, this was the approach taken to draw the plots in Figure~\ref{fig.pd_kernels}. Approximating the unknown $f$ with a single partially evaluated kernel however appears to be overly restrictive. A sensible next step would be to consider linear combinations of such kernel functions. It turns out that every \ac{pd} kernel has a function space associated with it that contains these linear combinations and is endowed with plenty of useful geometric structure. The following concepts are presented next to set up the stage for defining this special hypothesis space, the \textit{reproducing kernel Hilbert space}.
+In order to construct surrogate models for the unknown $f$, one could partially evaluate a given $k$ to match their domains and co-domains. In other words, fix one of its arguments so that $k(z,\cdot): \mathcal{X} \rightarrow \mathbb{R}, x \mapsto k(z,x)$ for some $z \in \mathcal{X}$. Indeed, this was the approach taken to draw the plots in Figure~\ref{fig.pd_kernels}. Approximating the unknown $f$ with a single partially evaluated kernel however appears to be overly restrictive, limiting. A sensible next step would be to consider linear combinations of such kernel functions. It turns out that every \ac{pd} kernel has a function space associated with it that contains these linear combinations and is endowed with plenty of useful geometric structure. The following concepts are presented to set up the stage for defining this special hypothesis space, the \textit{reproducing kernel Hilbert space}(RKHS).
 
 \begin{figure}[t]
 	\centering
@@ -66,9 +66,6 @@ In order to construct surrogate models for the unknown $f$, one could partially 
 	\label{fig.pd_kernels}
 \end{figure}
 
-
-Feature maps $\Phi$ are central in machine learning, allowing one to represent the data $x$ he has in a more suitable format. At the same time, \eqref{eq.kernels_feat_maps} unveils another aspect of a kernel evaluation $k(x,x')$: it returns the inner-product value of the transformed inputs $\Phi(x)$, $\Phi(x')$. Educational textbooks often interpret these inner-products as a similarity measure between $x$ and $x'$ \citep{scholkopf2002learning}.
-
 \begin{proposition}
 	\label{thm.pd_kernels_feature_maps}
 	\textbf{(\ac{pd} kernels have feature maps)} 
@@ -77,15 +74,18 @@ Feature maps $\Phi$ are central in machine learning, allowing one to represent t
 		\label{eq.kernels_feat_maps}
 		k(x,x') = \langle \Phi(x),\Phi(x') \rangle_\mathbb{H}
 	\end{equation}
-	holds for any $x,x' \in \mathcal{X}$.
+	holds for any $x,x' \in \mathcal{X}$. $\Phi$ is known as a feature map from $\mathcal{X}$ to $\mathbb{H}$.
 \end{proposition}
 
+\vspace{-14pt}
 \begin{my_proof}
 	\textbf{Proof.}
 	\cite[Theorem~4.16]{steinwart2008svm_book}, modulo the nomenclature difference.
 \end{my_proof}
 
-The mappings $\Phi$ above as well as the $\mathbb{H}$ spaces are in general not unique \citep[§4]{steinwart2008svm_book}, but there is one such space that enjoys an extra property that rules out some unexpected behavior from its members. This particular $\mathbb{H}$ is moreover not an arbitrary Hilbert space, but a Hilbert space of functions.
+Feature maps $\Phi$ are central in machine learning, allowing one to represent the data $x$ he has in a more suitable format. At the same time, \eqref{eq.kernels_feat_maps} unveils another aspect of a kernel evaluation $k(x,x')$: it returns the inner-product value of the transformed inputs $\Phi(x)$, $\Phi(x')$. Educational textbooks often interpret these inner-products as a similarity measure between $x$ and $x'$ \citep{scholkopf2002learning}.
+
+The mappings $\Phi$ above as well as the $\mathbb{H}$ spaces are in general not unique \citep[§4]{steinwart2008svm_book}. There is however one such $\mathbb{H}$ space that enjoys an extra property, ruling out some unexpected behavior from its members. This particular $\mathbb{H}$ is not an arbitrary Hilbert space, but a Hilbert space of functions.
 
 \begin{definition}
 	\label{def.rkhs}
@@ -125,7 +125,7 @@ In order to see how useful such a property is, consider a sequence $\{f_n\}_{n=1
 	\citep[Theorem~4.21]{steinwart2008svm_book}.
 \end{my_proof}
 
-We understand from Propositions~\ref{prop.unique_reprod_kernel} and \ref{prop.unique_rkhs} that a special relationship exists between kernel and its \ac{rkhs}. Nevertheless, it is still unclear from Definition~\ref{def.rkhs} alone how a given $k$ influences or defines the members of $\rkhs$. To shed light on the matter, it helps to explicitly construct $\rkhs$ starting from a given $k$. Consider the so-called \textit{pre-Hilbert space}
+We understand from Propositions~\ref{prop.unique_reprod_kernel} and \ref{prop.unique_rkhs} that a special relationship exists between a kernel and its \ac{rkhs}. Nevertheless, it is still unclear from Definition~\ref{def.rkhs} alone how a given $k$ influences or defines the members of $\rkhs$. To shed light on the matter, it helps to explicitly construct $\rkhs$ starting from a given $k$. Consider the so-called \textit{pre-Hilbert space}
 \begin{empheq}[box={\mymathbox[colback=black!2,drop small lifted shadow, sharp corners]}]{align}
 	\rkhs_0 :=& \; \text{span} \, \{ k(x,\cdot) \, | \, x \in \mathcal{X} \} \\
  	=&  \; \left\{ \sum_{i=1}^n c_i \, k(x_i,\cdot) \, | \, n \in \mathbb{N}, c_i \in \mathbb{R}, x_i \in \mathcal{X} \right\} \label{eq.pre_rkhs}
@@ -144,7 +144,7 @@ Closing $\mathcal{H}_0$ requires defining an inner-product on the superset $\rkh
 %
 }. Finally, the function space $\mathcal{H}$ defined in \eqref{eq.rkhs_closure} can then be shown to be a valid \ac{rkhs}\footnote{
 %
-For a proof of this statement, the reader is referred to \cite[§3]{berlinet2011reproducing} or to \cite[§4]{sejdinovic2012rkhs} for a more step-by-step pedagogical exposition.
+For a proof of this statement, the reader is referred to \cite[§3]{berlinet2011reproducing}, or to \cite[§4]{sejdinovic2012rkhs} for a more step-by-step pedagogical exposition.
 %
 } according to Definition~\ref{def.rkhs}. In fact, it is the \textit{only} one associated with $k$. We therefore understand that the members of $\rkhs$ are weighted sums of partially evaluated kernels as per \eqref{eq.pre_rkhs} along with their limit points. 
 %and requires showing that the elements included through the closure are indeed functions with well-defined point evaluations \cite[§4]{aronszajn1950theory}\cite[§10.2]{wendland2004scattered}, a step that is overlooked in simplified presentations.
@@ -159,19 +159,26 @@ The questions of how expressive RKHSs can be still lingers on. To better examine
 
 The above definition guarantees that for any target function $g \in C(\mathcal{X})$ and any tolerable error $\epsilon > 0$, there exists an $f$ in the \ac{rkhs} of a universal kernel such that their mismatch is bounded $| f(x) - g(x) | \leq \epsilon, \forall x \in \mathcal{X}$.
 % REFINE
-All in all, the universality property is an indication of how rich a hypothesis space is, thus reassuring the user that little bias error will be introduced by his choice of model class.
+All in all, the universality property is an indication of how rich a hypothesis space is, thus reassuring the user that little bias error will be introduced by his choice.
 
 \begin{proposition}
 	\label{prop.univ_kernels}
 	Let $\mathcal{X}$ be a compact subset of $\mathbb{R}^n$. The squared-exponential kernel with \eqref{eq.se_kernel} with $\ell >0$ is universal.
 \end{proposition}
 
+\vspace{-8pt}
 \begin{my_proof}
 	\textbf{Proof.}
 	\cite[Corollary~4.58]{steinwart2008svm_book}.
 \end{my_proof}
 
-In contrast with Proposition~\ref{prop.univ_kernels}, some results on the restrictiveness of RKHSs can also be found in the literature. In \cite{steinwart2020_no_rkhs_cont_func} for example, the author shows that no \ac{rkhs} can contain $C(X)$. On a looser note, some authors argue that members of the squared-exponential kernel \eqref{eq.squared_exponential} has an $\rkhs$ that is too smooth when compared to alternative hypothesis spaces that are also associated with the same kernel (see the discussion in \cite[§4]{kanagawa2018gaussian}). For a thorough exposition of universal kernels, the reader is referred to \cite{micchelli2006universal}. Lastly, we underline that other model classes in machine learning also enjoy the same universality properties that kernels do, notable certain architectures of deep neural networks \citep{kidger2020universal}.
+\begin{remark}
+	The anisotropic squared exponential kernel, where the hyperparameter $\ell$ is not a constant, but a vector weighing each $x$ dimension differently, is also universal. To see this, simply note that this generalized kernel function can recover any isotropic squared-exponential used to fulfill the universality condition.%so-called automatic relevance determination (ARD)
+\end{remark}
+
+In contrast with Proposition~\ref{prop.univ_kernels}, some results on the restrictiveness of RKHSs can also be found in the literature. In \cite{steinwart2020_no_rkhs_cont_func} for example, the author shows that no \ac{rkhs} can contain $C(X)$. On a looser note, some authors argue that the squared-exponential kernel \eqref{eq.se_kernel} has an $\rkhs$ that is too smooth when compared to alternative hypothesis spaces that are also associated with the same kernel (see the discussion in \cite[§4]{kanagawa2018gaussian}). For a thorough exposition of universal kernels, the reader is referred to \cite{micchelli2006universal}. Lastly, we underline that other model classes in machine learning also enjoy the same universality properties that kernels do, notable certain architectures of deep neural networks \citep{kidger2020universal}.
+
+To better visualize what an RKHS is and the types of functions we might find in it, the illustration in Figure~\ref{fig.rkhs_ex} was created. First, we see on the top left corner the single kernel member of the exponential RKHS with norm 1. On the right part of the figure, we see more erratic maps displaying an aggressive behavior that is reflected in the high value of their norms. Finally, on the bottom right corner, a sinusoidal-like map is shown. The latter suggests that, even though its characteristics are fairly different from the standard exponential kernel, the map was not penalized with a high norm, but showed a reasonably low value.
 
 \begin{landscape}
 \begin{figure}
@@ -180,7 +187,6 @@ In contrast with Proposition~\ref{prop.univ_kernels}, some results on the restri
 	\label{fig.rkhs_ex}
 \end{figure}
 \end{landscape}
-
 
 \section{Crafting models}
 \label{sec.crafting_models}
@@ -220,7 +226,7 @@ In the absence of measurement noise, i.e., when $\epsilon_i = 0$, the outputs $y
 	Some might think that models of the form \eqref{eq.min_norm_interp} would perform poorly in real-world scenarios as overfitting goes against established machine learning guidelines. Yet, some authors have recently advocated for such models, and interpolants in general, stating that they possess strong generalization capabilities (see e.g. \cite{belkin2018understand,belkin2019reconciling,beaglehole2022kernel}).
 \end{remark}
 
-To tackle the approximation problem in the presence of measurement noise, a compromise between fitting the data and rejecting uninformative fluctuations is sometimes desirable. One of the most standard tools used to achieve this balance is kernel ridge regression (KRR), in which the unconstrained problem
+To tackle the approximation problem in the presence of measurement noise, a compromise between fitting the data and rejecting uninformative fluctuations is sometimes desirable. One of the most standard tools used to achieve this balance is kernel ridge regression (KRR) as enunciated next.
 
 \begin{proposition}
 	\textbf{(Kernel ridge regression (KRR))}
@@ -229,27 +235,31 @@ To tackle the approximation problem in the presence of measurement noise, a comp
 		\inf_{f\in \rkhs} \; \frac{1}{n} \sum_{i=1}^n (y_i - f(x_i))^2 + \lambda \Vert f \Vert_\rkhs^2
 		\label{eq.krr_model}
 	\end{equation}
-	with $\lambda > 0$ admits a single minimizer, the function $f(x) = \sum_{i=1}^n \alpha_i x_i$ with $\alpha = (K_{XX} + n \lambda I)^{-1} y$. 
+	with $\lambda > 0$ admits a single minimizer, the KRR model $f(x) = \sum_{i=1}^n \alpha_i x_i$ with $\alpha = (K_{XX} + n \lambda I)^{-1} y$. 
 \end{proposition}
+\begin{my_proof}
+	\textbf{Proof.}
+	\cite{kimeldorf1971some}.
+\end{my_proof}
 
-
-Original representer theorem \cite{kimeldorf1971some}.
+To conclude this section, we will state a more general result, a theorem on which a large portion of kernel learning is grounded.
 
 \begin{theorem}
 	\textbf{(The representer theorem)}
-	Let $\{x_i,y_i\}_{i=1}^n$ be a collection of points such that $x_i \in \mathcal{X}$ for an arbitrary $\mathcal{X}$ and $y_i \in \mathbb{R}$. Let $k$ be a \ac{pd} kernel and $\rkhs \subset \mathbb{R}^\mathcal{X}$ its RKHS. Consider an arbitrary function $c : (\mathcal{X} \times R^2)^n \rightarrow \mathbb{R} \cup \{\infty\}$ and a strictly monotonic increasing function $\Omega: [0,\infty) \rightarrow \mathbb{R}$. Then, if $f \in \rkhs$ is a minimizer of the variational problem
+	Let $\{(x_i,y_i)\}_{i=1}^n$ be a collection of points such that $x_i \in \mathcal{X}$ for an arbitrary $\mathcal{X}$ and $y_i \in \mathbb{R}$. Let $k$ be a \ac{pd} kernel and $\rkhs \subset \mathbb{R}^\mathcal{X}$ its RKHS. Consider an arbitrary function $c : (\mathcal{X} \times R^2)^n \rightarrow \mathbb{R} \cup \{\infty\}$ and a strictly monotonic increasing function $\Omega: [0,\infty) \rightarrow \mathbb{R}$. Then, if $f \in \rkhs$ is a minimizer of the variational problem
 	\begin{equation}
 		\label{eq.representer_theorem_general_loss}
 		\inf_{f\in \rkhs} c((x_1,y_1,f(x_1)),\dots,(x_n,y_n,f(x_n))) + \Omega(\Vert f \Vert_\rkhs)
 	\end{equation}
 	admits a representation of the form $f(x) = \sum_{i=1}^n \alpha_i x_i$, with $\alpha_i \in \mathbb{R}$. 
 \end{theorem}
+
 \begin{my_proof}
-	The proof is given in \cite{scholkopf2001generalized}.
+	\textbf{Proof.}
+	\cite{scholkopf2001generalized}.
 \end{my_proof}
 
-Specializing \eqref{eq.representer_theorem_general_loss} to a more usual loss function, we arrive at the well-known kernel ridge regression (KRR) problem, which admits a unique, closed-form solution.
-
+%Specializing \eqref{eq.representer_theorem_general_loss} to a more usual loss function, we arrive at the well-known kernel ridge regression (KRR) problem, which admits a unique, closed-form solution.
 
 \section{Quantifying uncertainty}
 \label{sec.quant_uncert}
@@ -258,7 +268,7 @@ Besides being able to craft surrogate functions for our unknown ground-truth, it
 
 \subsection{The setting and problem definition}
 
-The theory developed in this section will revolve around a specific class of kernels and input spaces, and be built on the following standing assumptions.
+The theory developed in this section will revolve around a specific class of kernels and input spaces, and will be built on the following standing assumptions.
 
 \begin{assumption}
 	\label{as:kernel_spd_compact_X}
@@ -283,7 +293,7 @@ where $\delta_{i,j}$ denotes an additive measurement noise. If only a single out
 	$\delta_{i,j}$ is bounded by a known scalar $\bar{\delta}$, i.e., $|\delta_{i,j}| \leq \bar \delta, \forall i,j$.
 \end{assumption}
 
-At this point one could ask himself if any out-of-sample guarantees could be already established on the values attained by $f^\star$. The answer is no. Indeed, for any tentative upper bound $\omega < f^\star(x)$ at $x \not \in \{x_1,\dots,x_d\}$ regardless of the number of samples $d$, there is a member $f \in \mathcal{H}$ capable of reproducing any values at the $x_i$ locations and additionally violating $\omega$ by an arbitrary level. Lower bounds could be equally violated as well. What we lack is a complexity bound, which will be posed by restricting $f^\star$ to lie within the $\Gamma$-ball of $\mathcal{H}$.
+At this point one could ask himself if any out-of-sample guarantees could be already established on the values attained by $f^\star$. The answer is no. Indeed, for any tentative upper bound $\omega \in \mathbb{R}$ at $x \not \in \{x_1,\dots,x_d\}$, regardless of the number of samples $d$, there is a member $f \in \mathcal{H}$ capable of reproducing any values at the $x_i$ locations and additionally violating $\omega$ by an arbitrary level. Lower bounds could be equally violated as well. What we lack is a complexity bound, which will be posed by restricting $f^\star$ to lie within the $\Gamma$-ball of $\mathcal{H}$.
 
 \begin{assumption}
 	\label{as.norm_bound}
@@ -303,7 +313,7 @@ With all assumptions in place, we can formulate the variational problem $\mathds
 %\label{eq.infdimprob}
 %		\text{F}(x) = \sup_{f \, \in \mathcal{H}} \, \{ f(x) : \rknorm{f} \leq \Gamma, \infnorm{f_X - \mathsf{y}} \leq \bar \delta \} 
 %\end{equation}
-where $f_X$ is the vector of evaluations at the input locations, which are repeated whenever multiple outputs are available at a given input (see Appendix~\ref{sec.auxiliary_definitions}). We highlight that the supremum is guaranteed to be a finite numbers. To see this, notice that $|f(x)| = |\rkinner{f}{k(x,\cdot)}| \leq \rknorm{f} \rknorm{k(x,\cdot)} \leq \Gamma \, \sqrt{k(x,x)}$. This last bound is rather loose as it does not exploit any information present in $X$ nor the outputs $\mathsf{y}$, and is moreover uniform for translation-invariant kernels such as the squared-exponential. \eqref{eq.infdimprob} on the other hand makes use the dataset $\{(x_i,\mathsf{y}_i)\}_{i=1}^d$ in its entirety as well as the complexity bound $\Gamma$.
+where $f_X$ is the vector of evaluations at the input locations, which are repeated whenever multiple outputs are available at a given input (see Appendix~\ref{sec.auxiliary_definitions}). We highlight that the supremum is guaranteed to be a finite number. To see this, notice that $|f(x)| = |\rkinner{f}{k(x,\cdot)}| \leq \rknorm{f} \rknorm{k(x,\cdot)} \leq \Gamma \, \sqrt{k(x,x)}$. This last bound is rather loose as it does not exploit any information present in $X$ nor the outputs $\mathsf{y}$, and is moreover uniform for translation-invariant kernels such as the squared-exponential. \eqref{eq.infdimprob} on the other hand makes use the dataset $\{(x_i,\mathsf{y}_i)\}_{i=1}^d$ in its entirety as well as the complexity bound $\Gamma$.
 
 % thanks to \eqref{eq.uniformBound}. Given a query location $x$, $\mathds{P}0$ yields the tightest
 %\footnote{\textcolor{red}{This adjective has to be understood in the sense that for any other possible candidate bound $\epsilon$ such that $\epsilon<F(x)$, there exists an $\tilde{f}$ compatible with our assumptions that violates this bound. This means, $\Vert \tilde{f} \Vert_\mathcal{H} \leq \Gamma$, $\Vert \tilde{f}_X-\mathsf{y} \Vert_\infty\leq \bar{\delta}$, and $\tilde{f}(x)>\epsilon$.}} 
@@ -385,7 +395,7 @@ The proof involves showing that a solution to $\mathds{P}0$ necessarily lies in 
 		\overset{(i)}{=}& \sup_{\substack{f^{\Vert} \, \in \mathcal{H}^{\Vert} \\ f^\perp \, \in \mathcal{H}^\perp}} &&\left\{ f^{\Vert}(x) : \rknorm{f^{\Vert}}^2+\rknorm{f^\perp}^2 \leq \Gamma^2, \infnorm{f_{X}^\Vert - \mathsf{y}} \leq \bar \delta \right\} \\
 		\overset{(ii)}{=}& \sup_{f^{\Vert} \, \in \mathcal{H}^{\Vert}} &&\left\{ f^{\Vert}(x) : \rknorm{f^{\Vert}}^2 \leq \Gamma^2, \infnorm{f^{\Vert}_{X} - \mathsf{y}} \leq \bar \delta \right\} \label{eq.last}
 	\end{align}
-	In $(i)$, the $f^\perp$ component vanished from the cost and from the last constraint due to orthogonality w.r.t. $k(x_i,\cdot) \in \mathcal{H}^\Vert$ for any $x_i \in \mathds{X}$; moreover, the Pythagorean relation $\rknorm{f}^2 = \rknorm{f^{\Vert}}^2 + \rknorm{f^\perp}^2$ was also used. To arrive at the second equality $(ii)$, one only has to note that the objective is insensitive to $f^\perp$ and that any $f^\perp \neq 0_{\mathcal{H}}$ would tighten the first constraint. 
+	In $(i)$, the $f^\perp$ component vanished from the cost and from the last constraint due to orthogonality w.r.t. $k(x_i,\cdot) \in \mathcal{H}^\Vert$ for any $x_i \in \mathds{X}$; moreover, the Pythagorean relation $\rknorm{f}^2 = \Vert f^{\Vert} \Vert^2_{\mathcal{H}} + \Vert f^\perp \Vert^2_{\mathcal{H}}$ was also used. To arrive at the second equality $(ii)$, one only has to note that the objective is insensitive to $f^\perp$ and that any $f^\perp \neq 0_{\mathcal{H}}$ would tighten the first constraint. 
 	
 	The attainment of the supremum is addressed next. Consider \eqref{eq.last} and denote the members of $\mathcal{H}^\Vert$ simply as $f$. $\rknorm{f}^2 \leq \Gamma^2$ is a closed and bounded constraint as it is the sublevel set of a norm. We transform $\infnorm{f_{X} - \mathsf{y}} \leq \bar \delta$ into $\vert f(x_i) - y_{i,j} \vert \leq \bar \delta$, $i=1,\dots,d, \, j =1,\dots,n_i$. Sets of the form $\{a \in \mathbb{R}: \vert a \vert \leq b \}$ are clearly closed in $\mathbb{R}$, hence \{$f(x_i) \in \mathbb{R} : \vert f(x_i) - y_{i,j}\vert \leq \bar \delta, \forall i,j \}$ is also closed. For any $x_i$, the evaluation functional $L_{x_i}(f) = f(x_i)$ is a linear operator and thus pre-images of closed sets are also closed. Consequently, $\{f \in \mathcal{H}^\Vert : \vert f(x_i) - y_{i,j}\vert \leq \bar \delta, \forall i,j \}$ is closed in $\mathcal{H}^\Vert$. The intersection of a finite number of closed sets is necessarily closed, thus all constraint present in \eqref{eq.last} define a closed feasible set. Since $\mathcal{H}^{\Vert}$ is finite-dimensional, any closed and bounded subset of it is compact (Heine–Borel); therefore, the continuous objective $L_x(f) = f(x)$ in \eqref{eq.last} attains a maximum by the Weierstrass extreme value theorem. 
 	
@@ -397,9 +407,9 @@ The proof involves showing that a solution to $\mathds{P}0$ necessarily lies in 
 	In a way analogous to \eqref{eq.infdimprob}, the problem $\inf_{f \, \in \mathcal{H}} \{ f(x) : \rknorm{f} \leq \Gamma, \infnorm{f_X - \mathsf{y}} \leq \bar \delta \} $ could be posed to compute the minimum out-of-sample value that could be attained by the unknown ground-truth. Its finite-dimensional counter-part would be ${\normalfont \text{B}(x)} = \min_{c \in \mathds{R}^d, c_x \in \mathds{R}}  \{c_x : \eqref{eq.P1constrA}, \eqref{eq.P1constrB}\}$ for any $x \in \mathcal{X} \backslash X$, and extend it to points $x = x_i \in X$ with $\text{B}(x) = \min_{c \in \mathbb{R}^d} \{c_i \, | \, c^\top K_{XX}^{-1}c \leq \Gamma^2, \, \infnorm{\Lambda \, c - \mathsf{y}} \leq \bar \delta \}$. As a result, computing the whole  ``uncertainty envelope'' requires solving two problems per query point.
 \end{remark}
 
-An illustrative example is shown in Figure~\ref{fig.ex_opt_bounds}, where noisy samples were gathered from an unknown ground-truth (dashed line). The upper and lower bounds C$(x)$, B$(x)$ were then computed based on an augmented norm estimate, and are shown in red. Finally, the ground-truth is shown to lie within the uncertainty envelope. We highlight that this procedure does not require defining any nominal model.
+An illustrative example is shown in Figure~\ref{fig.ex_opt_bounds}, where noisy samples were gathered from an unknown map (dashed line). The upper and lower bounds C$(x)$ and B$(x)$ were then computed based on an augmented norm estimate, and are shown in red. Finally, the ground-truth is shown to lie within the uncertainty envelope. We underline that this procedure does not require defining any nominal model.
 
-Theorem~\ref{thm.main} states that quantifying uncertainty in our particular kernelized setting can be done through convex programming involving $d+1$ decision variables. According to \eqref{eq.P1constrA}, $c \in \mathbb{R}^d$ is constrained to be consistent with the already seen outputs $\mathsf{y}$ up to the tolerance $\bar\delta$; whereas according to \eqref{eq.P1constrB}, the ensemble $c$ and $c_x$ must lead to a total complexity not greater than $\Gamma$. It turns out that, for any query point $x$ outside the data-set, the complexity bound is always activated since the objective is only sensitive to $c_x$, which is not constrained by the infinity norm. This is formalized next. Replacing the inequality in \eqref{eq.P1constrA} by an equality would lead to the loss of convexity as is therefore not desirable.
+Theorem~\ref{thm.main} states that quantifying uncertainty in our particular kernelized setting can be done through convex programming involving $d+1$ decision variables. According to \eqref{eq.P1constrB}, $c \in \mathbb{R}^d$ is constrained to be consistent with the already seen outputs $\mathsf{y}$ up to the tolerance $\bar\delta$; whereas according to \eqref{eq.P1constrA}, the ensemble $c$ and $c_x$ must lead to a total complexity not greater than $\Gamma$. It turns out that, for any query point $x$ outside the data-set, the complexity bound is always activated since the objective is only sensitive to $c_x$, which is not constrained by the infinity norm. This is formalized next. Replacing the inequality in \eqref{eq.P1constrA} by an equality would lead to the loss of convexity as is therefore not desirable.
 
 \begin{figure}[b]
 	\centering
@@ -426,7 +436,7 @@ Theorem~\ref{thm.main} states that quantifying uncertainty in our particular ker
 	\end{bmatrix} = \Gamma^2 $. 
 \end{proposition}
 
-Given our knowledge on the noise influence $\bar \delta$, it is only natural to ask what the limits of the uncertainty quantification technique considered herein are. More concretely, is the width of the envelope $\text{C}(x) - \text{B}(x)$ restricted to a certain minimum value that cannot be reduced even with the addition of new data? From \eqref{eq.P1constrB}, it is clear that at any input location $x_i \in X$, $\text{C}(x_i)$ and $\text{B}(x_i)$ cannot be more than $2\bar \delta$ apart. In addition to that, the presence of the complexity constraint \eqref{eq.P1constrA} can bring the two values closer to each other. Depending on how restrictive this latter constraint is for a given $x = x_i$, the corresponding output $y_i$ might lie outside the interval between $\text{C}(x_i)$ and $\text{B}(x_i)$. In this case, the resulting width is considerably reduced as stated next and as illustrated in Figure~\ref{fig.ex2_opt_bounds}.
+Given our knowledge on the noise influence $\bar \delta$, it is natural to ask what the limits of the uncertainty quantification technique considered herein are. More concretely, is the width of the envelope $\text{C}(x) - \text{B}(x)$ restricted to a certain minimum value that cannot be reduced even with the addition of new data? From \eqref{eq.P1constrB}, it is clear that at any input location $x_i \in X$, $\text{C}(x_i)$ and $\text{B}(x_i)$ cannot be more than $2\bar \delta$ apart. In addition to that, the presence of the complexity constraint \eqref{eq.P1constrA} can bring the two values closer to each other. Depending on how restrictive this latter constraint is for a given $x = x_i$, the corresponding output $y_i$ might lie outside the interval between $\text{C}(x_i)$ and $\text{B}(x_i)$. In this case, the resulting width is considerably reduced as stated next and as illustrated in Figure~\ref{fig.ex2_opt_bounds}.
 
 \begin{proposition} 
 	\label{prop.smallWidth}
@@ -496,7 +506,7 @@ One of the fundamental sources of computational complexity in problem \eqref{eq.
 
 The optimization problem above is convex since it is a quadratic-over-linear function with $\Lambda K_{XX} \Lambda^\top \succeq 0$ and $\lambda$ restricted to the positive reals. The objective can moreover be decomposed into a differentiable part and a single non-differentiable term $\onenorm{\nu}$, with $\nu$ unconstrained. This class of problems has long been studied and mature numerical algorithms exist to solve them, notably different flavors of splitting methods such as the alternating direction method of multipliers \cite[§6]{boyd2011distributed}. Alternatively, a standard linear reformulation could be employed to replace $\onenorm{\nu}$ by $\sum_i \eta_i$, with additional constraints $-\nu \leq \eta, \, \nu \leq \eta$, yielding a differentiable objective, but with extra decision variables and linear constraints. 
 
-By definition, weak duality \citep[§5]{bertsekas2009convex} ensures that any feasible solution $(\nu^*,\lambda^*)$ for $\mathds{D}1$ leads to an objective value greater or equal to the primal problem $\mathds{P}1$ optimal value. As a result, any feasible solution for $\mathds{D}1$ returns a valid upper-bound for the ground-truth  $f^\star(x)$. When used in real-time applications, users may thus choose not to solve $\mathds{D}1$ to optimality since early-stopping solvers can always be done with a theoretical guarantee on the returned value. Next, a mild sufficient condition is given to ensure a zero duality gap between the primal and dual problems.
+By definition, weak duality \citep[§5]{bertsekas2009convex} ensures that any feasible solution $(\nu^*,\lambda^*)$ for $\mathds{D}1$ leads to an objective value greater or equal to the primal problem $\mathds{P}1$ optimal value. As a result, any feasible solution for $\mathds{D}1$ returns a valid upper-bound for the ground-truth  $f^\star(x)$. When employed in real-time applications, users may thus choose not to solve $\mathds{D}1$ to optimality since early-stopping solvers can always be done with a theoretical guarantee on the returned value. Next, a mild sufficient condition is given to ensure a zero duality gap between the primal and dual problems.
 
 \begin{proposition}
 	\label{prop.strong_duality}
@@ -570,12 +580,12 @@ Now, relax the problem by allowing $\delta$ to attain different values inside an
 		\max_{\infnorm{\delta_1},\infnorm{\delta_1} \leq \bar\delta} P_X(x) \sqrt{ \Gamma^2 - \rknorm{\tilde s}^2 - \delta_1^\top K_{XX}^{-1}\delta_1 +2y^\top K_{XX}^{-1}\delta_1} + \tilde s(x) + \delta_2^\top K_{XX}^{-1}K_{Xx}  \label{eq.relaxedObjective}
 	\end{equation}
 The above objective is separable and the terms associated with $\delta_2$ evaluate to $\max_{\delta_2 \in \mathbb{R}^d} \{ \delta_2^\top K_{XX}^{-1}K_{Xx} : \Vert \delta_2 \Vert_\infty \leq \bar\delta \} = \bar{\delta} \, \Vert K_{XX}^{-1}K_{Xx} \Vert_1$ since these norms are duals of each other \citep[§A.1.6]{boyd2004convex}. Notice how what is inside the square-root is independent of the parameter $x$ and, therefore, only needs to be evaluated once for a fixed set of inputs $X$. Thanks to the strong duality of quadratic programming, we have that $\max_{\delta_1 \in \mathbb{R}^d} \left\{ -\delta_1^\top K_{XX}^{-1}\delta_1 + 2y^\top K_{XX}^{-1}\delta_1 - \rknorm{\tilde s}^2 : \Vert \bar\delta_1 \Vert_\infty \leq \bar\delta \right\}$  is equal to $\min_{\nu \in \mathbb{R}^d} \left\{ \frac{1}{4}\nu^\top K_{XX}\nu + \nu^\top y + \bar{\delta} \onenorm{\nu}\right\}$, which by definition is $\tilde \Delta$.
-Finally, recall that \eqref{eq.relaxedObjective} was a (conservative) upper bound for $f^\star(x)$. Given an arbitrary model $s(x)$, the triangle inequality $|f(x) - s(x)| \leq |f(x) - \tilde s(x)| + |\tilde s(x) - s(x)|$ can be used to bound the distance between its predictions and the ground-truth values, where $|f(x) - \tilde s(x)|$ comes from the derivations made in this paragraph. We have thus at the same expressions presented in Proposition~\ref{prop:closed_form_bounds}.
+Finally, recall that \eqref{eq.relaxedObjective} was a (conservative) upper bound for $f^\star(x)$. Given an arbitrary model $s(x)$, the triangle inequality $|f(x) - s(x)| \leq |f(x) - \tilde s(x)| + |\tilde s(x) - s(x)|$ can be used to bound the distance between its predictions and the ground-truth values, where $|f(x) - \tilde s(x)|$ comes from the derivations made in this paragraph. We arrive thus at the same expressions presented in Proposition~\ref{prop:closed_form_bounds}.
 
 The proof of Proposition~\ref{prop:closed_form_bounds} presented in Section~\ref{sec.selected_derivations} follows a different, simpler argumentation. The derivation presented here however better highlights how the relaxed maximizaition \eqref{eq.relaxedObjective} takes into account the worst-possible inner-product $\delta_2^\top K_{XX}^{-1}K_{Xx}$ and norm term associated with $\delta_1$ jointly. Besides, Proposition~\ref{prop:closed_form_bounds} is also seen to strongly rely on the interpolant $\tilde s(x)$ as shown by the use of the triangle-inequality.  Despite this fact, we have experimentally achieved reasonable results when in moderate noise level scenarios.
 
 \begin{remark}
-	The sub-optimal bounds given in Proposition~\ref{prop:closed_form_bounds} feature a nominal model at their center, which is desirable in situations. In the optimal scenario, the minimum norm regressor $s^\star(x) = \alpha^{\star\top} K_{Xx}$, $\alpha^\star = \text{arg}\min_{\alpha \in \mathbb{R}^d} \{ \alpha^\top K_{XX} \alpha : \infnorm{K_{XX} \alpha - y} \leq \bar\delta \}$ can be used as a nominal model. This choice is guaranteed to lie completely within $\text{C}(x)$ and $\text{B}(x)$, although not necessarily in the middle, since the map $s^\star$ belongs to $\mathcal{H}$ and is a feasible solution for $\mathds{P}0$ in \eqref{eq.infdimprob}.
+	The sub-optimal bounds given in Proposition~\ref{prop:closed_form_bounds} feature a nominal model at their center, which is desirable in certain situations. In the optimal case, the minimum norm regressor $s^\star(x) = \alpha^{\star\top} K_{Xx}$, $\alpha^\star = \text{arg}\min_{\alpha \in \mathbb{R}^d} \{ \alpha^\top K_{XX} \alpha : \infnorm{K_{XX} \alpha - y} \leq \bar\delta \}$ can be used as a nominal model. This choice is guaranteed to lie completely within $\text{C}(x)$ and $\text{B}(x)$, although not necessarily in the middle, since the map $s^\star$ belongs to $\mathcal{H}$ and is a feasible solution for $\mathds{P}0$ in \eqref{eq.infdimprob}.
 \end{remark}
 
 \section{Kernel predictive control}
@@ -641,7 +651,7 @@ For the sake of training the multi-step ahead models and confidence sets, a part
 
 \begin{remark}
 	\textbf{(On collecting the multi-step ahead data):}
-	In practical scenarios, one typically performs various long experiments with the dynamical system to collect data and craft models. Clearly, an experiment that starts at a given initial state $x_0$, is followed by a sequence of inputs $u_t,\dots,u_{N-1}$, and where all states are logged $x_1,\dots,x_{N}$ (possibly with noise), yields one training tuple for every model $F_t$ and confidence set $\mathbb{X}_t$, $t=1,\dots,N$. We highlight that it is however not possible to extract multiple tuples from a long experiment to assemble the 1-step ahead dataset if noise is present. This is due to our measurement model \eqref{eq.observational_model}, whereby the initial state of a tuple cannot be corrupted.
+	In practical scenarios, we typically perform various long experiments with the dynamical system to collect data and craft models. Clearly, an experiment that starts at a given initial state $x_0$, is followed by a sequence of inputs $u_t,\dots,u_{N-1}$, and where all states are logged $x_1,\dots,x_{N}$ (possibly with noise), yields one training tuple for every model $F_t$ and confidence set $\mathbb{X}_t$, $t=1,\dots,N$. We highlight that it is however not possible to extract multiple tuples from a long experiment to assemble the 1-step ahead dataset if noise is present. This is due to our measurement model \eqref{eq.observational_model}, whereby the initial state of a tuple cannot be corrupted.
 	%Training the associated kernel models requires various $N$-step experiments to be performed rather than simply having one-step ones. For instance, the model $F_N$ requires multiple tuples $(x_0,u_0,\dots,u_{N-1})$ as features and (possibly noisy) measurements of the resulting states $x_N$ as targets. We highlight that long sequences of linked states, i.e., long experiments, are preferred over various short ones even in classical parametric system identification \citep{lennart1999system}.
 \end{remark}
 
@@ -723,11 +733,11 @@ A number of numerical examples are presented next to put to test the previously 
 	\label{eq:ex1_gtfunc}
 	f^\star(z_1,z_2) = 1 - 0.8 z_1^2 + z_2 + 8 \sin(0.8z_2)
 \end{equation}
-restricted to the domain $\mathcal{X} = \{ x \in \mathbb{R}^2 \, | \, \Vert x \Vert_\infty \leq 10 \}$, $x = [z_1 \; z_2]$. A squared-exponential kernel $k(x,x') = \exp \left(-\frac{\Vert x - x'\Vert^2}{2\ell^2}\right)$ was chosen for our experiments with lengthscale $l=5$, which was empirically estimated by gridding the search-space and performing posterior validation.
+restricted to the domain $\mathcal{X} = \{ x \in \mathbb{R}^2 \, | \, \Vert x \Vert_\infty \leq 10 \}$, $x = [z_1 \; z_2]$. A squared-exponential kernel $k(x,x') = \exp \left(-\frac{\Vert x - x'\Vert^2}{2\ell^2}\right)$ was chosen for our experiments with lengthscale $l=5$, which was empirically estimated by gridding the search-space and performing a posterior validation.
 
 Strictly speaking, the UQ techniques developed in this chapter require $f^\star \in \rkhs$ as per Assumption~\ref{as:rkhs_contains_gt}. As opposed to the examples depicted in Figures~\ref{fig.ex_opt_bounds}--\ref{fig.ex4} whose ground-truths were finite sums of partially evaluated kernels, \eqref{eq:ex1_gtfunc} is a polynomial-trigonometric map and it is not clear if it belongs or not to the SE RKHS. One should nevertheless bear in mind that such an RKHS is dense in the space of continuous functions as stated in Proposition~\ref{prop.univ_kernels} and even if $f^\star \not\in \rkhs$, there exists a $f^* \in \rkhs$ that is point-wise arbitrarily close to $f^\star$. As a result, it is customary in practice to overlook Assumption~\ref{as:rkhs_contains_gt} if we are sure that the function being considered is continuous and the kernel, universal.
  
-The norm estimate $\Gamma$ was obtained through the sampling procedure described in Appendix~\ref{sec.appendix_estimating_rkhs_norms} with a final value of $\Gamma=1200$. Next, $d=100$ samples were collected in two different ways: points lying on an equidistant grid, and being drawn randomly from a uniform distribution. Noise was added to both data-sets, sampled uniformly in the interval $-\bar\delta \leq \delta \leq \bar\delta$ with $\bar \delta = 1$ and later with $\bar \delta = 5$.
+The norm estimate $\Gamma$ was obtained through the sampling procedure described in Appendix~\ref{sec.appendix_estimating_rkhs_norms} with a final value of $\Gamma=1200$. Next, $d=100$ samples were collected in two different ways: points lying on an equidistant grid, and being drawn randomly from a uniform distribution. Noise was added to both data-sets, sampled uniformly from the interval $-\bar\delta \leq \delta \leq \bar\delta$ with $\bar \delta = 1$ and later with $\bar \delta = 5$.
 
 Figure~\ref{fig.numex_ex1_3d} displays the ground-truth $f^\star$ along with the optimal upper bound C$(x)$ computed by solving \eqref{eq.P1case1} for all four scenarios. Consider first the cases where $\bar \delta = 1$. Whereas the $\text{C}(x)$ surface was overall tight for the grid-based dataset, with an average distance of $3.01$ to the ground-truth, randomized data yielded a less regular bound with an average distance of $8.02$. These numbers were increased respectively to $9.57$ and $18.97$ when the noise level was risen to $\bar \delta = 5$. The plots illustrate the disadvantages of relying on completely randomized input locations, which degrade especially the borders of $\text{C}(x)$. An equidistant grid of points is highly favorable since it not only fills the domain well, but also ensures a minimum separation distance so that no two inputs are too close to each other, thus also avoiding numerical problems when handling the kernel matrix $K_{XX}$. 
 
@@ -840,12 +850,12 @@ where $c_A$ and $c_B$ denote respectively the concentrations of cyclopentadiene 
 	\centering
 	\includegraphics[scale=0.4]{../images/chap2_numex_ex3_phase_subopt.pdf} \hspace{5pt}
 	\includegraphics[scale=0.4]{../images/chap2_numex_ex3_phase_opt.pdf} 
-	\caption{A comparison between the optimal bounds (blue) and the closed-form sub-optimal ones (green). The 2D ground-truth was sliced at $z_1 = -3$ and is shown in dashed black.}
+	\caption{Phase portraits of the CSTR system under the same control inputs, but with different uncertainty quantification techniques. Constraints are represented by the dashed lines.}
 	\label{fig:ex3_phase}
 	\vspace{15pt}
 	\includegraphics[scale=0.4]{../images/chap2_numex_ex3_time_subopt.pdf} \hspace{5pt}
 	\includegraphics[scale=0.4]{../images/chap2_numex_ex3_time_opt.pdf}
-	\caption{The ground-truth (black) and the upper optimal bound C$(x)$ (blue) with $100$ data-points. Two noise levels are considered, $\bar\delta = 1$ and $\bar\delta = 5$, and two sampling strategies, an equidistant grid and random uniform sampling.}
+	\caption{State trajectories of the CSTR system under the same control inputs, but with different uncertainty quantification techniques. Constraints are represented by the dashed lines.}
 	\label{fig:ex3_time}
 \end{figure}
 
@@ -877,16 +887,16 @@ Predictions and the system angular velocity evolution from two different initial
 
 In this first part of the thesis, we introduced and developed a novel way of quantifying the out-of-sample uncertainty of the values of an unknown function. The framework was built around kernels, their RKHS spaces, and a bounded measurement noise assumption from which no statistical information is known. Optimal hard upper and lower bounds were then derived, being computable through convex optimization. Closed-form conservative approximation schemes were given to be used in time-constrained scenarios. Some properties of the optimal and sub-optimal approaches were derived and their sensitivity to the internal parameters (the RKHS norm estimate and the noise bound) were studied. The techniques were finally employed to solve a number of problems ranging from a direct function bounding one, to solving an optimization problem with unknown constraints, to certifying optimal control actions.
 
-We envision multiple future investigations and extensions of the theory presented in this chapter. First, additional properties of the optimal bounds could be established, in particular, although we have not had the time to prove it, we suspect the upper and lower envelopes C$(x)$ and B$(x)$ to be continuous and piece-wise smooth whenever the base kernel $k$ is smooth. Deriving this result would likely involve studying the solution set and the value function of the parametric program \eqref{eq.P1case1}.  One necessary extension to allow for the learning of dynamical systems from trajectories, and not resorting to multi-step ahead models, is to consider uncertainty in $x$ itself. This would call of course for robust parametric programming to be employed. Finally, on the application side, the KPC framework presented in Section~\ref{sec.kpc} guarantees constraint satisfaction, but can be rather challenging to implement in practice due to the use of multiple models. Long prediction horizons are generally desirable to favor stability, however, this requires more models to be trained in higher dimensional spaces since longer and longer control sequences are incorporated into the feature vector. Estimating hyperparameters and filling the space with data then become difficult tasks in such scenarios, limiting therefore KPC to short prediction horizons. To eliminate some of these difficulties, a different approach to kernel-based predictive control could be adopted, that of optimism. Instead of being robust against all possible ground-truth dynamics, one could pick a dynamic that is consistent with the historical data and complexity bound, the most convenient one. As the system is operated and more information is gathered, the set of possibilities is reduced and the adopted dynamic would be more consistent with the true unknown dynamics. We believe that, based on recent regret bounds for kernelized global optimization, convergence rates could be derived for the iterative performance improvement of this scheme and bounds could be established for the constraint violation frequency.
+We envision multiple future investigations and extensions of the theory presented in this chapter. First, additional properties of the optimal bounds could be established, in particular, although we have not had the time to prove it, we suspect the upper and lower envelopes C$(x)$ and B$(x)$ to be continuous and piece-wise smooth whenever the base kernel $k$ is smooth. Deriving this result would likely involve studying the solution set and the value function of the parametric program \eqref{eq.P1case1}.  One necessary extension to allow for the learning of dynamical systems from trajectories, and not resorting to multi-step ahead models, is to consider uncertainty in $x$ itself. This would call of course for robust parametric programming to be employed. Finally, on the application side, the KPC framework presented in Section~\ref{sec.kpc} guarantees constraint satisfaction, but can be rather challenging to implement in practice due to the use of multiple models. Long prediction horizons are generally desirable to favor stability, however, this requires more models to be trained in higher dimensional spaces since longer and longer control sequences are incorporated into the feature vector. Estimating hyperparameters and filling the space with data then become difficult tasks in such scenarios, limiting KPC to short prediction horizons. To eliminate some of these difficulties, a different approach to kernel-based predictive control could be adopted, that of optimism. Instead of being robust against all possible ground-truth dynamics, one could pick a dynamic that is consistent with the historical data and complexity bound, the most convenient one. As the system is operated and more information is gathered, the set of possibilities is reduced and the adopted dynamic would be more consistent with the true unknown dynamics. We believe that, based on recent regret bounds for kernelized global optimization, convergence rates could be derived for the iterative performance improvement of this scheme and bounds could be established for the constraint violation frequency.
 
 \section{Appendices}
 
 \subsection{Estimating kernel hyperparameters}
 \label{sec.appendix_hyerparams}
 
-Kernel functions typically feature a number of internal constants that need to be specified by the user, the so-called \textit{hyperparameters}. Although some theoretical properties remain insensitive to the final choice of hyperparameters\footnote{The squared-exponential kernel is universal (Definition~\ref{def.universal_kernel}) regardless of the its lengthscale value.}, the numerical stability and real-world performance of kernel algorithms highly depend on the tuning of these numbers \citep{fasshauer2011positive}. 
+Kernel functions typically feature a number of internal constants that need to be specified by the user, the so-called \textit{hyperparameters}. Although some theoretical properties remain insensitive to the final choice of hyperparameters\footnote{As an example, the squared-exponential kernel is universal (see Definition~\ref{def.universal_kernel}) regardless of the its lengthscale value.}, the numerical stability and real-world performance of kernel algorithms highly depend on the tuning of these numbers \citep{fasshauer2011positive}. 
 
-One popular approach to optimizing kernel hyperparameters is to consider the log marginal likelihood objective of a Gaussian process with Gaussian measurement noise, and apply a gradient-based numerical algorithm to it \citep[§5.4.1]{williams2006gaussian}. This amounts to solving a smooth, unconstrained non-convex optimization problem to local optimality.  Two appealing ... of this approach are the continuous nature of the search and the inherent regularization properties of the objective, known to combat overfitting. 
+One popular approach to optimizing kernel hyperparameters is to consider the log marginal likelihood objective of a Gaussian process with Gaussian measurement noise, and apply a gradient-based numerical algorithm to it \citep[§5.4.1]{williams2006gaussian}. This amounts to solving a smooth, unconstrained non-convex optimization problem to local optimality.  Two appealing features of this approach are the continuous nature of the search and the inherent regularization properties of the objective, known to combat overfitting. 
 
 Bayesian optimization (BayesOpt) is another widely adopted methodology to fine-tune hyperparameters against a pre-specified objective function \citep{snoek2012practical,shahriari2015taking}. BayesOpt operates on pairs of hyperparameters and their associated objective function values, and constructs a model for their unknown relationship. Next, a so-called \textit{acquisition function} based on the model is then employed to tell bad hyperparameters from promising ones \citep{wilson2018maximizing}. A new set of parameters is finally chosen to be experimented with and its performance is measured. This new piece of information is incorporated into the dataset and the process is repeated until some termination criterion is reached. Interestingly, the most popular model class used when reconstructing the aforementioned unknown relationship is Gaussian process, which is itself based on kernels whose own hyperparameters have to be set by the users.
 
@@ -895,7 +905,7 @@ Lastly, we could also mention the different flavors of cross-validation (CV). Th
 \subsection{Estimating RKHS norms}
 \label{sec.appendix_estimating_rkhs_norms}
 
-Members $f \in \rkhs$ are either finite weighted sums of partially evaluated kernels $k(x,\cdot)$ or limits of sequences of such sums (see Section~\ref{sec.formalism_of_kernels}). Assume $f$ enjoys a finite expansion of $N$ terms, then
+Members $f \in \rkhs$ are either finite weighted sums of partially evaluated kernels $k(x,\cdot)$ or limits of sequences of such sums (see Section~\ref{sec.formalism_of_kernels}). Assume that $f$ enjoys a finite expansion of $N$ terms, then
 \begin{align}
 	\Vert f \Vert_\rkhs^2 &= \langle f, f \rangle_\rkhs \label{eq.rkhs_norm_eq1} \\
 	&= \left\langle \sum_{i=1}^N \alpha_i k(x_i,\cdot), \sum_{i=1}^N \alpha_i k(x_i,\cdot) \right\rangle_\rkhs \label{eq.rkhs_norm_eq2} \\
@@ -905,7 +915,7 @@ where \eqref{eq.rkhs_norm_eq1} is the \ac{rkhs} norm definition, \eqref{eq.rkhs_
 
 In practice, it is hard to imagine a situation where the coefficients $\alpha$ would be known for a given physical system. Suppose however that we have a dataset at hand $\{(x_i,f_{x_i})\}\}_{i=1}^n$, where $f_{x_i} = f(x_i)$. The inputs $x_i$ need to be pairwise-distinct. Assume that $k$ is SPD and consider the function $s_n(x) := \sum_{i=1}^n \alpha_i k(x_i,x)$, $\alpha = K_{XX}^{-1} f_X$, which reproduces our dataset at every input, i.e., $s_n(x_i) = f_{x_i}$. According to the well-known optimal recovery property \cite[§8.3]{iske2018approximation}, $s_n$ not only interpolates the dataset, but also attains a minimum \ac{rkhs} norm while doing so  (Proposition~\ref{prop.MNI}) and, moreover, $\Vert s_n \Vert_\rkhs \leq \Vert f \Vert_\rkhs$ for any number of samples $n$. In view of the quadratic form \eqref{eq.rkhs_norm_eq3}, it is evident that for any new pair $(x_{n+1},f_{x_{n+1}})$ added to the dataset, $\Vert s_{n+1} \Vert_\rkhs \geq \Vert s_n \Vert_\rkhs$ holds. One can finally show that if samples are acquired in such a way to fill the domain, then $\Vert f \Vert_\rkhs$ is the least upper bound of the $\Vert s_n \Vert_\rkhs$ sequence and, from the monotone convergence theorem, $\Vert s_n \Vert_\rkhs \rightarrow \Vert f \Vert_\rkhs$ is guaranteed.
 
-The discussion above showed that the \ac{rkhs} norm $\Vert f \Vert_\rkhs$ can indeed be estimated from below from samples $\{(x_i,f_{x_i})\}_{i=1}^n$. This is done by simply evaluating the norm of the interpolant for which we know the weights $\alpha$
+The discussion above showed that the \ac{rkhs} norm $\Vert f \Vert_\rkhs$ can indeed be estimated from below from samples $\{(x_i,f_{x_i})\}_{i=1}^n$. This is done by simply evaluating the norm of the MNI interpolant for which we know the weights $\alpha$
 \begin{equation}
 \Vert s_n \Vert_\rkhs^2 = \alpha^\top K_{XX} \alpha = f_{X}^\top K_{XX}^{-1} f_{X}
 \end{equation}
