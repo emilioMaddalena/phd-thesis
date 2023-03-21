@@ -3,7 +3,7 @@
 \chapter{Elements of analysis and geometry}
 \label{app.elements_analysis_algebra}
 
-For a comprehensive presentation of the concepts, the reader os referred to \cite{searcoid2002elements,pugh2002real}. 
+For a comprehensive presentation of the concepts, the reader os referred to \cite{searcoid2002elements} and \cite{pugh2002real}. 
 
 All vector spaces herein are defined over the field of real numbers $\mathbb{R}$.
 
@@ -23,7 +23,7 @@ For simplicity, we write $(V,d)$ instead of $(V,+,\times,d)$.
 
 \begin{definition}
 	\textbf{(Convergent sequence)}
-	Given a metric space $(X,d)$, a sequence $\{x_n\}_{n\in\mathbb{N}}$ in $X$ is said to \textit{converge} to an element $x \in X$ if
+	Given a metric space $(V,d)$, a sequence $\{x_n\}_{n\in\mathbb{N}}$ in $V$ is said to \textit{converge} to an element $x \in V$ if
 	\begin{equation}
 		\forall \epsilon > 0 \, : \, \exists N \in \mathbb{N} \, : \,  \forall n \geq N \, : \, d(x_n, x) < \epsilon
 	\end{equation}
@@ -33,7 +33,7 @@ Convergent sequences are usually written $\lim_{n \rightarrow \infty} x_n = x$ o
 
 \begin{definition}
 	\textbf{(Cauchy sequence)}
-	Given a metric space $(X,d)$, a sequence $\{x_n\}_{n\in\mathbb{N}}$ in $X$ is said to be \textit{Cauchy} if
+	Given a metric space $(V,d)$, a sequence $\{x_n\}_{n\in\mathbb{N}}$ in $V$ is said to be \textit{Cauchy} if
 	\begin{equation}
 		\forall \epsilon > 0 \, : \, \exists N \in \mathbb{N} \, : \,  \forall n,m \geq N \, : \, d(x_n, x_m) < \epsilon
 	\end{equation}
@@ -43,7 +43,7 @@ Cauchy sequences are a superset of convergent sequences.
 
 \begin{definition}
 	\textbf{(Complete space)}
-	A metric space is $(V,+,\times,d)$ is said to be complete if every Cauchy sequence $\{x_n\}_{n\in\mathbb{N}}$ converges to an element $x \in X$.
+	A metric space is $(V,+,\times,d)$ is said to be complete if every Cauchy sequence $\{x_n\}_{n\in\mathbb{N}}$ converges to an element $x \in V$.
 \end{definition}
 
 
@@ -63,26 +63,26 @@ Metrics can be defined via norms through $d(x,y) := \Vert x - y\Vert$. As a resu
 
 \begin{definition}
 	\textbf{(Banach space)}
-	A normed space $(X,\Vert \cdot \Vert)$ is called a Banach space if it is complete.
+	A normed space $(V,\Vert \cdot \Vert)$ is called a Banach space if it is complete.
 \end{definition}
 
 \begin{definition}
 	\textbf{(Inner-product space)}
-	An inner-product space is a vector space $(X,+,\times)$ equipped with a map $\langle \cdot, \cdot \rangle : X \times X \rightarrow \mathbb{R}$ called an \textit{inner-product} satisfying
+	An inner-product space is a vector space $(V,+,\times)$ equipped with a map $\langle \cdot, \cdot \rangle : V \times V \rightarrow \mathbb{R}$ called an \textit{inner-product} satisfying
 	\begin{align}
-		(i) \, &\langle x, y \rangle = \langle y, x \rangle\\
-		(ii) \, &\langle \alpha x + \beta y, z \rangle = \alpha \langle x, z \rangle + \beta \langle y, z \rangle\\
-		(iii) \, &\langle x, x \rangle \geq 0 \\
-		(iv) \, &\langle x, x \rangle = 0 \Leftrightarrow x = 0
+		(i) \, &\langle v, w \rangle = \langle w, v \rangle\\
+		(ii) \, &\langle \alpha v + \beta w, z \rangle = \alpha \langle v, z \rangle + \beta \langle w, z \rangle\\
+		(iii) \, &\langle v, v \rangle \geq 0 \\
+		(iv) \, &\langle v, v \rangle = 0 \Leftrightarrow v = 0
 	\end{align}
-	for any $v,w \in V$ and any $\alpha \in \mathbb{R}$.
+	for any $v,w,z \in V$ and any $\alpha, \beta \in \mathbb{R}$.
 \end{definition}
 
 Norms can be defined via inner-products through $\Vert x \Vert := \sqrt{\langle x, x\rangle}$. As a result, every inner-product space is also a normed space.
 
 \begin{definition}
 	\textbf{(Hilbert space)}
-	An inner-product space $(X,\langle \cdot, \cdot \rangle)$ is called a Hilbert space if it is complete.
+	An inner-product space $(V,\langle \cdot, \cdot \rangle)$ is called a Hilbert space if it is complete.
 \end{definition}
 
 \begin{definition}
@@ -181,7 +181,7 @@ The concept of a Hamel basis is aligned with the more specific concept of a ``ba
 
 \begin{definition}
 	\textbf{(Polyhedron)}
-	A polyhedron $P \subseteq \mathbb{R}^n$ is a set $P = \{x \in \mathbb{R}^n : p_i(x) \leq 0, i=1,\dots,n_P\}$ with $n_P < \infty$ and $p_i(x)$ being are affine functions.
+	A polyhedron $P \subseteq \mathbb{R}^n$ is a set $P = \{x \in \mathbb{R}^n | p_i(x) \leq 0, i=1,\dots,n_P\}$ with $n_P < \infty$ and $p_i(x)$ being are affine functions.
 \end{definition}
 
 \begin{definition}
