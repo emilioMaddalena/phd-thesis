@@ -106,7 +106,7 @@ Regard the size $n_z$ in L2 as a hyperparameter. It is then clear that as $n_z$ 
 
 \begin{theorem}
 	\label{thm:pQPrepr}
-	\textbf{(The pQP NN can learn any linear MPC controller):} Let $\hat{\pi}: \mathbb{R}^{n_x} \rightarrow \mathbb{R}^{n_u}$ be the map defined by the composition of all four layers, i.e., $\hat{\pi}(x) := L4 \circ L3 \circ L2 \circ L1(x)$. Set $\epsilon = 0$, then $\exists F$, $f$, $H$, $G$ and $g$ with appropriate dimensions such that $\forall x \in \mathcal{X}, \ \hat{\pi}(x) = \pi(x)$.
+	\textbf{(The pQP NN can learn any linear MPC controller)} Let $\hat{\pi}: \mathbb{R}^{n_x} \rightarrow \mathbb{R}^{n_u}$ be the map defined by the composition of all four layers, i.e., $\hat{\pi}(x) := L4 \circ L3 \circ L2 \circ L1(x)$. Set $\epsilon = 0$, then $\exists F$, $f$, $H$, $G$ and $g$ with appropriate dimensions such that $\forall x \in \mathcal{X}, \ \hat{\pi}(x) = \pi(x)$.
 \end{theorem}
 
 \textit{Proof}: In essence, the proof consists in showing that L2 has exactly the same structure as the dual of the MPC formulation \eqref{eq:linearmpc}, and in showing that L3 can recover the primal solution from the dual.

@@ -50,9 +50,9 @@ Instances of \ac{pd} kernel functions with index set $\mathcal{X} = \mathbb{R}^n
 	&k_\text{pol}(x,x') = \left(\sigma^2 (x \cdot x') + \gamma \right)^d \\
 	&k_\text{cos}(x,x') = \cos\left(2\pi \sum_i ([x]_i-[x']_i)/\ell \right)
 \end{align}
-where $\cdot$ and $\Vert \cdot \Vert$ denote the usual inner-product  and 2-norm in $\mathbb{R}^n$, respectively; and the constants $\ell \in \mathbb{R}_{>0}$, $\sigma, \gamma\in \mathbb{R}$ are the so-called \textit{hyperparameters}. Plots of these functions are presented in Figure~\ref{fig.pd_kernels}, illustrating how diverse they can be. Additionally, the product of any two PD kernels, such as the one depicted in the figure, is also a PD kernel \citep{scholkopf2002learning}. % more complete list of \ac{pd} kernels and their mathematical properties can be found in Appendix~A. 
+where $\cdot$ and $\Vert \cdot \Vert$ denote the usual inner-product  and 2-norm in $\mathbb{R}^n$, respectively; and the constants $\ell \in \mathbb{R}_{>0}$, $\sigma, \gamma\in \mathbb{R}$, $d \in \{1,2,\dots\}$ are the so-called \textit{hyperparameters}. Plots of these functions are presented in Figure~\ref{fig.pd_kernels}, illustrating how diverse they can be. Additionally, the product of any two PD kernels, such as the one depicted in the figure, is also a PD kernel \citep{scholkopf2002learning}. % more complete list of \ac{pd} kernels and their mathematical properties can be found in Appendix~A. 
 
-In order to construct surrogate models for the unknown $f$, one could partially evaluate a given $k$ to match their domains and co-domains. In other words, fix one of its arguments so that $k(z,\cdot): \mathcal{X} \rightarrow \mathbb{R}, x \mapsto k(z,x)$ for some $z \in \mathcal{X}$. Indeed, this was the approach taken to draw the plots in Figure~\ref{fig.pd_kernels}. Approximating the unknown $f$ with a single partially evaluated kernel however appears to be overly restrictive, limiting. A sensible next step would be to consider linear combinations of such kernel functions. It turns out that every \ac{pd} kernel has a function space associated with it that contains these linear combinations and is endowed with plenty of useful geometric structure. The following concepts are presented to set up the stage for defining this special hypothesis space, the \textit{reproducing kernel Hilbert space}(RKHS).
+In order to construct surrogate models for the unknown $f$, one could partially evaluate a given $k$ to match their domains and co-domains. In other words, fix one of its arguments so that $k(z,\cdot): \mathcal{X} \rightarrow \mathbb{R}, x \mapsto k(z,x)$ for some $z \in \mathcal{X}$. Indeed, this was the approach taken to draw the plots in Figure~\ref{fig.pd_kernels}. Approximating the unknown $f$ with a single partially evaluated kernel however appears to be overly restrictive, limiting. A sensible next step would be to consider linear combinations of such kernel functions. It turns out that every \ac{pd} kernel has a function space associated with it that contains these linear combinations and is endowed with plenty of useful geometric structure. The following concepts are presented to set up the stage for defining this special hypothesis space, the \textit{reproducing kernel Hilbert space} (RKHS).
 
 \begin{figure}[t]
 	\centering
@@ -364,11 +364,11 @@ Consider now the convex parametric quadratically-constrained linear program $\ma
 %\end{subequations}
 for any $x \in \mathcal{X} \backslash X$, and extend its value function $C(x)$ to points $x = x_i \in X$ with the solution of $\mathds{P}1': \, \text{C}(x) \,=\, \max_{c \in \mathbb{R}^d} \{c_i \, | \, c^\top K_{XX}^{-1}c \leq \Gamma^2, \, \infnorm{\Lambda \, c - \mathsf{y}} \leq \bar \delta \}$.
 %This can be thought of as finding a map that interpolates the points $\{(x_i, c_i)\}_{i=1}^d$ and maximizes its value $c_x$ at the input location $x$. 
-The two cases $\mathds{P}1$ and $\mathds{P}1'$ are distinguished due to the matrix in \eqref{eq.P1constrA} becoming singular for any $x\in X$, and since it allows for one decision variable to be eliminated. The connection between this optimization problem and \eqref{eq.infdimprob} is unveiled next.
+The two cases $\mathds{P}1$ and $\mathds{P}1'$ are distinguished due to the matrix in \eqref{eq.P1constrA} becoming singular for any $x\in X$, and since it allows for one decision variable to be eliminated. The definition of $\Lambda$ is given in Appendix~\ref{sec.auxiliary_definitions}. The connection between this optimization problem and \eqref{eq.infdimprob} is unveiled next.
 
 \begin{theorem}
 	 \label{thm.main}
-	 {\normalfont \textbf{(Finite-dimensional equivalence):}}
+	 {\normalfont \textbf{(Finite-dimensional equivalence)}}
 	The objective in $\mathds{P}0$ attains its supremum in $\mathcal{H}$ and ${\normalfont \text{F}}(x) = {\normalfont \text{C}}(x)$ for any $x \in \mathcal{X}$.
 \end{theorem}
 
@@ -403,7 +403,7 @@ The proof involves showing that a solution to $\mathds{P}0$ necessarily lies in 
 \end{my_proof}
 
 \begin{remark}
-	\textbf{(The optimal lower bound):}
+	\textbf{(The optimal lower bound)}
 	In a way analogous to \eqref{eq.infdimprob}, the problem $\inf_{f \, \in \mathcal{H}} \{ f(x) : \rknorm{f} \leq \Gamma, \infnorm{f_X - \mathsf{y}} \leq \bar \delta \} $ could be posed to compute the minimum out-of-sample value that could be attained by the unknown ground-truth. Its finite-dimensional counter-part would be ${\normalfont \text{B}(x)} = \min_{c \in \mathds{R}^d, c_x \in \mathds{R}}  \{c_x : \eqref{eq.P1constrA}, \eqref{eq.P1constrB}\}$ for any $x \in \mathcal{X} \backslash X$, and extend it to points $x = x_i \in X$ with $\text{B}(x) = \min_{c \in \mathbb{R}^d} \{c_i \, | \, c^\top K_{XX}^{-1}c \leq \Gamma^2, \, \infnorm{\Lambda \, c - \mathsf{y}} \leq \bar \delta \}$. As a result, computing the whole  ``uncertainty envelope'' requires solving two problems per query point.
 \end{remark}
 
@@ -440,7 +440,7 @@ Given our knowledge on the noise influence $\bar \delta$, it is natural to ask w
 
 \begin{proposition} 
 	\label{prop.smallWidth}
-	{\normalfont \textbf{(Width smaller than the noise bound):}}
+	{\normalfont \textbf{(Width smaller than the noise bound)}}
 	If $\exists \mathsf{y}_i$ such that $y_{i,j} > {\normalfont C}(x_i)$ or $y_{i,j} < \text{B}(x_i)$ for some $j$, then $\text{C}(x_i) - \text{B}(x_i) \leq \bar \delta$.
 \end{proposition}
 
@@ -470,7 +470,7 @@ The practical implications of Proposition~\ref{prop.decreasing}  are shown in Fi
 %Let us take a closer look at the tightened constraint \eqref{eq.tightenedConstr}. The term $\bar c^\top K_{\bar X \bar X}^{-1} K_{\bar X z} =: s(z)$ represents an interpolating model passing through the output values $\bar c$, that is, $c$ and $c_x$ (see e.g. the discussion in Section~3.1 of \cite{maddalena2020deterministic}). If the difference $s(z) - c_z$ can be made small, then the tightening will also be reduced, whereas it will be significant if the difference is large. The result is of course dictated by the $\infty$-norm constraint, since $c_z$ cannot be more than $\bar \delta$ away from all the outputs $\mathsf{y}$ available at $z$. Therefore, a new datum will cause significant shrinkage of the envelope at a point $z \in \Omega$ when the new output causes $s(z) - c_z$ to be large, which intuitively can be seen as a measure of gained information through the new sample. Finally, this process is weighted by the inverse of the power function $P_{\bar X}^{-2}(z)$, which does not depend on any output, but only on the input locations. This indicates the advantage of evenly-spaced samples over random or bulked ones on the overall bound width. Example~1 in Section~\ref{sec::Result} confirms this intuition.
 
 \begin{remark}
-	\textbf{(On the accuracy of the noise bound):}
+	\textbf{(On the accuracy of the noise bound)}
 	Recovering the ground-truth as shown in Figure~\ref{fig.ex2_opt_bounds} requires the noise realizations to match $\bar \delta$ and $-\bar \delta$; it is thus necessary to have \textit{tight} noise bounds at hand for it to happen, which is not always a reality in practical applications. On the other hand, Proposition~\ref{prop.decreasing} guarantees the decreasing uncertainty property regardless of how accurate $\bar \delta$ is.
 \end{remark}
 
@@ -510,7 +510,7 @@ By definition, weak duality \citep[§5]{bertsekas2009convex} ensures that any fe
 
 \begin{proposition}
 	\label{prop.strong_duality}
-	{\normalfont \textbf{(Strong duality):}}
+	{\normalfont \textbf{(Strong duality)}}
 	If $\bar \delta > |\delta_{i,j}|, \forall i, j$ and $\Gamma > \rknorm{f^\star}$, then no duality gap exists, i.e., $\max \mathds{P}1 = \min \mathds{D}1$.
 \end{proposition}
 
@@ -546,7 +546,7 @@ With \eqref{eq.noise_free_bounds} in place, a more generalized inequality can be
 \end{proposition}
 
 \begin{remark}
-	\textbf{(The sub-optimal bounds):}
+	\textbf{(The sub-optimal bounds)}
 	Denote by $S(x)$ the right-hand side of the inequality \eqref{eq.uniformBound2}. One can then bound the ground-truth evaluations simply through $s(x) - S(x) \leq f^\star(x) \leq s(x) + S(x)$. We shall refer to them as ``the sub-optimal bounds'' since the inequalities will always be looser than $B(x) \leq f^\star(x) \leq C(x)$ obtained by solving the optimization problems of Section~\ref{sec.the_optimal_solution}.
 \end{remark}
 
@@ -591,7 +591,7 @@ The proof of Proposition~\ref{prop:closed_form_bounds} presented in Section~\ref
 \section{Kernel predictive control}
 \label{sec.kpc}
 
-The theory developed so far revolved purely around function approximation. In this subsection we make use of it to go from data to safely controlling a dynamical system by means of kernelized models and uncertianty estimates. For convenience and due to the shifting from one domain to another, notation will be overloaded.
+The theory developed so far revolved purely around function approximation. In this subsection we make use of it to go from data to safely controlling a dynamical system by means of kernelized models and uncertainty estimates. For convenience and due to the shifting from one domain to another, notation will be overloaded.
 
 Consider a discrete-time dynamical system of the form 
 \begin{equation}
@@ -650,7 +650,7 @@ The diagram shown in Figure~\ref{fig.kpc_sets} illustrates the nominal predictio
 For the sake of training the multi-step ahead models and confidence sets, a particular set of data has to be gathered. For $F_1$ and $\mathbb{X}_1$, one needs $\{(x_t,u_t),y_t\}_{t=1}^d$, $y_t = f(x_t,u_t) + \delta_t$, where $|\delta_t| \leq \bar\delta$ and where disconnected one-step sequences can be put together. For $F_2$ and $\mathbb{X}_2$, one needs $\{(x_t,u_t,u_{t+1}),y_t\}_{t=1}^d$, $y_t = f(f(x_t,u_t),u_{t+1}) + \delta_t$. Following the same logic, for a general pair $F_N$ and $\mathbb{X}_N$, one needs tuples of states $x_t$ and $N-1$ control moves $u_t,\dots,u_{N-1}$ and the $N$th step ahead state $x_{t+N}$ possibly corrupted by noise. 
 
 \begin{remark}
-	\textbf{(On collecting the multi-step ahead data):}
+	\textbf{(On collecting the multi-step ahead data)}
 	In practical scenarios, we typically perform various long experiments with the dynamical system to collect data and craft models. Clearly, an experiment that starts at a given initial state $x_0$, is followed by a sequence of inputs $u_t,\dots,u_{N-1}$, and where all states are logged $x_1,\dots,x_{N}$ (possibly with noise), yields one training tuple for every model $F_t$ and confidence set $\mathbb{X}_t$, $t=1,\dots,N$. We highlight that it is however not possible to extract multiple tuples from a long experiment to assemble the 1-step ahead dataset if noise is present. This is due to our measurement model \eqref{eq.observational_model}, whereby the initial state of a tuple cannot be corrupted.
 	%Training the associated kernel models requires various $N$-step experiments to be performed rather than simply having one-step ones. For instance, the model $F_N$ requires multiple tuples $(x_0,u_0,\dots,u_{N-1})$ as features and (possibly noisy) measurements of the resulting states $x_N$ as targets. We highlight that long sequences of linked states, i.e., long experiments, are preferred over various short ones even in classical parametric system identification \citep{lennart1999system}.
 \end{remark}
@@ -672,7 +672,7 @@ where $X = (x_1,\dots,x_N)$, $U = (u_0,\dots,u_{N-1})$ are the decision variable
 After having introduced \eqref{eq.KPC}, its properties should be discussed. First, recursive feasibility cannot be shown by means of the classical sequence shifting arguments due to the use of multiple confidence sets $\mathbb{X}_t$. Nevertheless, previous successful iterations can contribute to the feasibility of future KPC problems. More precisely, the closed-loop data of up to $N-1$ past steps can be used to reduce the uncertainty regarding the location of true next states \textit{without updating any models}. This is formalized in the safe relaxation strategy (SRS) stated next.
 
 \begin{proposition}
-	Assume that the $N-1$ previous consecutive \emph{KPC} iterations were feasible. Denote by $(u_{-N+1}, \dots, u_{-1})$ and $(x_{-N+1}, \dots, x_{-1})$ the closed-loop sequences of past controls and states, and by $x_0$ the current state. Let \emph{KPC}$^+$ be the \emph{KPC} optimization problem \eqref{eq.optControlProb} with set constraints $\mathbb{X}_1(x_0,u_0) \subseteq \mathbb{X}$, $\mathbb{X}_2(x_0,u_0,u_1) \subseteq \mathbb{X}$, $\dots$, $\mathbb{X}_{N-1}(x_0,u_0,\dots,u_{N-2}) \subseteq \mathbb{X}$ relaxed to
+	Assume that the $N-1$ previous consecutive \emph{KPC} iterations were feasible. Denote by $(u_{-N+1}, \dots, u_{-1})$ and $(x_{-N+1}, \dots, x_{-1})$ the closed-loop sequences of past controls and states, and by $x_0$ the current state. Let \emph{KPC}$^+$ be the \emph{KPC} optimization problem \eqref{eq.KPC} with set constraints $\mathbb{X}_1(x_0,u_0) \subseteq \mathbb{X}$, $\mathbb{X}_2(x_0,u_0,u_1) \subseteq \mathbb{X}$, $\dots$, $\mathbb{X}_{N-1}(x_0,u_0,\dots,u_{N-2}) \subseteq \mathbb{X}$ relaxed to
 	\begin{equation}
 		\label{eq.SRS}
 		\begin{aligned}
@@ -953,6 +953,11 @@ Calculating $\Delta$ amounts to solving a convex optimization problem since it i
 %	Moreover, if $\delta$ follows a uniform distribution $\mathcal{U}(-\bar \delta, \bar \delta)$, then $\mathbb{E}(\Vert \tilde s_n \Vert_\rkhs^2 - \Vert s_n \Vert_\rkhs^2) = \dots$
 %	\label{prop.expected}
 %\end{proposition}
+
+\subsection{On the joint estimation of $\bar\delta$ and $\Gamma$}
+\label{sec.joint_estimation}
+
+Rather than carrying out an independent estimation of the measurement noise bound and of the ground-truth RKHS norm, both parameters could be jointly considered (see for example the work \cite[§3]{milanese2004set} in which the authors tackle a very similar problem). In this context, data could be used to exclude certain $(\bar\delta,\Gamma)$ combinations, effectively falsifying whole regions of this two-dimensional space. Selecting an unfalsified tuple $(\bar\delta,\Gamma)$ guarantees feasibility of the optimal bounds optimization problem. As a last provoking thought, one could try to further extend this idea and consider the kernel hyperparameters as well with the hope of finding sensible values for all necessary constants by solving a single optimization problem.
 
 \subsection{Auxiliary definitions}
 \label{sec.auxiliary_definitions}
